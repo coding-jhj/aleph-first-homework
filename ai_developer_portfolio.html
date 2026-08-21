@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jeonghwan Ju | AI Engineer Portfolio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React 18 & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel for JSX compilation in browser -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Noto Sans KR Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body {
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      word-break: keep-all;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-500 selection:text-white">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // Native Inline SVG Icons for zero-dependency local execution
+    const GithubIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+    );
+    const ChevronRightIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+    );
+    const CpuIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+    );
+    const SmartphoneIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+    );
+    const ServerIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+    );
+    const DatabaseIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    );
+    const BrainCircuitIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5a3 3 0 10-5.997.125 4 4 0 00-2.526 5.77 4 4 0 00.556 6.588A4 4 0 1012 18Z"/><path d="M12 5a3 3 0 115.997.125 4 4 0 012.526 5.77 4 4 0 01-.556 6.588A4 4 0 1112 18Z"/><path d="M12 5v13"/></svg>
+    );
+    const BotIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></svg>
+    );
+    const SparklesIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
+    );
+    const CheckCircleIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    );
+    const AlertTriangleIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    );
+    const ActivityIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    );
+    const Volume2Icon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+    );
+    const PlayIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    );
+    const GaugeIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+    );
+    const FileSearchIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="11.5" cy="14.5" r="2.5"/><path d="M13.25 16.25 15 18"/></svg>
+    );
+    const FileTextIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    );
+    const WorkflowIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9"/><path d="M12 13v2"/></svg>
+    );
+    const SlidersIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+    );
+    const UserCheckIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+    );
+    const ScaleIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h18"/></svg>
+    );
+    const AwardIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
+    );
+    const HelpCircleIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    );
+    const EyeIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    );
+    const CodeIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    );
+    const MenuIcon = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    );
+    const XIcon = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    );
+    const MailIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    );
+    const CheckSquareIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    );
+    const BoxesIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+    );
+    const SearchIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    );
+    const TerminalIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+    );
+    const BookOpenIcon = ({ className = "w-4 h-4" }) => (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    );
+
+    function App() {
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+      const [ttsText, setTtsText] = useState('반려동물을 향한 감성 메시지를 GPU 기반 초고속 TTS 서비스로 합성합니다.');
+      const [ttsVoice, setTtsVoice] = useState('girl');
+      const [isGeneratingTts, setIsGeneratingTts] = useState(false);
+      const [ttsSuccessMsg, setTtsSuccessMsg] = useState(null);
+      const [pdfPage, setPdfPage] = useState(1);
+      const [activePipelineStep, setActivePipelineStep] = useState(0);
+      const [techFilter, setTechFilter] = useState('all');
+      const [selectedTechIndex, setSelectedTechIndex] = useState(0);
+
+      const scrollTo = (id) => {
+        setMobileMenuOpen(false);
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      };
+
+      const handleTtsGenerate = () => {
+        setIsGeneratingTts(true);
+        setTtsSuccessMsg(null);
+        setTimeout(() => {
+          setIsGeneratingTts(false);
+          setTtsSuccessMsg('Qwen3 TTS 오디오가 성공적으로 생성되었습니다 (소요시간: 0.28초)');
+        }, 1200);
+      };
+
+      const pipelineSteps = [
+        {
+          id: 1,
+          title: 'Document Input',
+          sub: '계약서 / 등기부',
+          icon: FileTextIcon,
+          desc: '사용자가 업로드한 임대차계약서 PDF 및 등기사항전부증명서 이미지 문서 수신 및 서식 파싱',
+          tech: 'PDF.js / PyMuPDF',
+          input: '계약서 PDF, 등기부 스캔본',
+          output: '원본 래스터/벡터 이미지 데이터'
+        },
+        {
+          id: 2,
+          title: 'AI Extraction',
+          sub: 'Gemini OCR',
+          icon: CpuIcon,
+          desc: 'Multimodal Gemini LLM을 통한 표 형태 및 비정형 특약사항 텍스트 구조화 추출',
+          tech: 'Gemini 2.5 Flash / Vision OCR',
+          input: '문서 이미지 영역',
+          output: 'Key-Value 키값 매핑 JSON'
+        },
+        {
+          id: 3,
+          title: 'Deterministic Repair',
+          sub: '규칙 기반 보정',
+          icon: SlidersIcon,
+          desc: 'OCR 오인식 한자/숫자, 도로명 주소, 보증금 한글 표기를 결정론적 정규식 로직으로 정밀 보정',
+          tech: 'Regex Engine / Address Parser',
+          input: '초기 OCR JSON 데이터',
+          output: '오류가 교정된 정규화 데이터'
+        },
+        {
+          id: 4,
+          title: 'User Verification',
+          sub: '사용자 교정',
+          icon: UserCheckIcon,
+          desc: '추출된 주요 계약 핵심 요소(소재지, 보증금, 임대인)에 대해 사용자가 직관적으로 직접 검증/수정',
+          tech: 'Interactive UI Form / State Management',
+          input: '보정된 데이터',
+          output: '최종 사용자 승인 데이터'
+        },
+        {
+          id: 5,
+          title: 'Rule Analysis',
+          sub: '권리/리스크 분석',
+          icon: ScaleIcon,
+          desc: '부동산 관련 법률 알고리즘을 적용하여 근저당 비율, 선순위 채권, 위반건축물 여부 자동 진단',
+          tech: 'Legal Rule Engine / RAG Strategy',
+          input: '승인 데이터 + 등기부 정보',
+          output: '위험도 등급 및 판정 리포트'
+        },
+        {
+          id: 6,
+          title: 'Official Evidence',
+          sub: '증거/근거 제시',
+          icon: AwardIcon,
+          desc: '리스크 분석 결과의 근거가 되는 계약서 조항 및 등기부 등본의 정확한 페이지/행 하이라이팅',
+          tech: 'PDF Bounding Box Mapping',
+          input: '분석 결과 + 문서 좌표',
+          output: '근거 위치 하이라이트 매핑'
+        },
+        {
+          id: 7,
+          title: 'Next Action Guide',
+          sub: '추가 질문/지침',
+          icon: HelpCircleIcon,
+          desc: '리스크에 대비하기 위해 임차인이 공인중개사나 임대인에게 요구해야 할 후속 질문 및 특약 작성 지침 안내',
+          tech: 'RAG Guided Agent',
+          input: '최종 진단 결과',
+          output: '맞춤형 대응 가이드라인'
+        }
+      ];
+
+      const techStackList = [
+        {
+          name: 'Python',
+          category: 'ai',
+          categoryLabel: 'AI / ML Core',
+          badge: 'Main Language',
+          desc: '데이터 분석, AI 모델 서빙, 파이프라인 구축 및 백엔드 로직 설계의 주력 언어',
+          projects: ['VoiceGuide', 'Rainbow Bridge', 'Lease-Companion', 'RepoPilot', 'StelLive'],
+          icon: CodeIcon
+        },
+        {
+          name: 'YOLOv11',
+          category: 'ai',
+          categoryLabel: 'AI / ML Core',
+          badge: 'Vision Object Detection',
+          desc: '실시간 보행 장애물 감지 및 바운딩 박스 추정을 위한 경량화 비전 모델',
+          projects: ['VoiceGuide'],
+          icon: EyeIcon
+        },
+        {
+          name: 'PyTorch',
+          category: 'ai',
+          categoryLabel: 'AI / ML Core',
+          badge: 'Deep Learning',
+          desc: '음성 합성(TTS) 모델 파인튜닝 및 커스텀 Neural Network 구현/평가',
+          projects: ['Rainbow Bridge'],
+          icon: BrainCircuitIcon
+        },
+        {
+          name: 'TFLite',
+          category: 'ai',
+          categoryLabel: 'AI / ML Core',
+          badge: 'On-Device AI',
+          desc: '모바일 환경 추론 최적화를 위한 양자화(Quantization) 및 GPU Delegate 적용',
+          projects: ['VoiceGuide'],
+          icon: CpuIcon
+        },
+        {
+          name: 'FastAPI',
+          category: 'backend',
+          categoryLabel: 'Backend & Data',
+          badge: 'High Performance API',
+          desc: '비동기 처리(Async) 기반의 실시간 AI 추론 서빙 및 API 게이트웨이 구축',
+          projects: ['VoiceGuide', 'Rainbow Bridge', 'Lease-Companion', 'RepoPilot'],
+          icon: ServerIcon
+        },
+        {
+          name: 'PostgreSQL & MongoDB',
+          category: 'backend',
+          categoryLabel: 'Backend & Data',
+          badge: 'RDBMS / NoSQL',
+          desc: 'RAG 임베딩 메타데이터 저장 및 구조화된 계약/유저 상태 데이터 파이프라인 연동',
+          projects: ['Lease-Companion', 'Personal AI Studio'],
+          icon: DatabaseIcon
+        },
+        {
+          name: 'Android & Kotlin',
+          category: 'mobile',
+          categoryLabel: 'Mobile & Web',
+          badge: 'Native Mobile',
+          desc: '실시간 카메라 프레임 수집, TFLite 추론 가속, 단계별 햅틱 피드백 연동',
+          projects: ['VoiceGuide'],
+          icon: SmartphoneIcon
+        },
+        {
+          name: 'React & TypeScript',
+          category: 'mobile',
+          categoryLabel: 'Mobile & Web',
+          badge: 'Modern Web UI',
+          desc: '대시보드 시각화, 웹 기반 인터랙티브 분석 시뮬레이터 및 RAG UI 제작',
+          projects: ['Lease-Companion', 'AI Search Agent'],
+          icon: WorkflowIcon
+        },
+        {
+          name: 'Docker & Cloud Run',
+          category: 'devops',
+          categoryLabel: 'DevOps & Infra',
+          badge: 'Container & Deploy',
+          desc: 'AI 백엔드 컨테이너화 및 서버리스 클라우드 자동 배포 파이프라인 구축',
+          projects: ['Rainbow Bridge', 'StelLive'],
+          icon: ServerIcon
+        },
+        {
+          name: 'GitHub Actions',
+          category: 'devops',
+          categoryLabel: 'DevOps & Infra',
+          badge: 'CI / CD Automation',
+          desc: '데이터 수집 스케줄링, 자동 리포트 생성 및 GitHub Pages 자동 배포 연동',
+          projects: ['StelLive Data Dashboard', 'Review-Estcamp'],
+          icon: WorkflowIcon
+        }
+      ];
+
+      const filteredTechs = techFilter === 'all' 
+        ? techStackList 
+        : techStackList.filter(t => t.category === techFilter);
+
+      const currentTech = techStackList[selectedTechIndex] || techStackList[0];
+
+      return (
+        <div className="min-h-screen bg-slate-50 text-slate-900">
+          
+          {}
+          <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollTo('hero')}>
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-blue-500/20">
+                    JJ
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-extrabold text-slate-900 text-lg tracking-tight leading-none">
+                      Jeonghwan Ju
+                    </span>
+                    <span className="text-xs font-semibold text-blue-600 leading-tight">
+                      AI Engineer
+                    </span>
+                  </div>
+                </div>
+
+                <nav className="hidden md:flex items-center space-x-1 lg:space-x-6 text-sm font-semibold text-slate-600">
+                  <button onClick={() => scrollTo('about')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">소개</button>
+                  <button onClick={() => scrollTo('voiceguide')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">프로젝트</button>
+                  <button onClick={() => scrollTo('more-projects')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">더 많은 프로젝트</button>
+                  <button onClick={() => scrollTo('journey')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">여정</button>
+                  <button onClick={() => scrollTo('tech-stack')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">기술 스택</button>
+                </nav>
+
+                <div className="hidden md:flex items-center">
+                  <a 
+                    href="mailto:coding.jhjrf@gmail.com" 
+                    className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    <MailIcon className="w-4 h-4 mr-1.5" />
+                    연락하기
+                  </a>
+                </div>
+
+                <div className="flex md:hidden">
+                  <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                    {mobileMenuOpen ? <XIcon /> : <MenuIcon />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {mobileMenuOpen && (
+              <div className="md:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1 text-base font-medium text-slate-700">
+                <button onClick={() => scrollTo('about')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">소개</button>
+                <button onClick={() => scrollTo('voiceguide')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">대표 프로젝트</button>
+                <button onClick={() => scrollTo('more-projects')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">더 많은 프로젝트</button>
+                <button onClick={() => scrollTo('journey')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">여정</button>
+                <button onClick={() => scrollTo('tech-stack')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">기술 스택</button>
+                <a href="mailto:coding.jhjrf@gmail.com" className="block w-full text-center mt-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg">연락하기</a>
+              </div>
+            )}
+          </header>
+
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+
+            {}
+            <section id="hero" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 lg:p-12 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mt-12 -mr-12 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+                  <div className="lg:col-span-7 space-y-6">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-bold">
+                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                      AI System & Infrastructure Engineer
+                    </div>
+
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                      배운 기술을<br />
+                      <span className="text-blue-600 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                        실제로 동작하는 시스템
+                      </span>으로<br />
+                      연결하는 AI 개발자
+                    </h1>
+
+                    <p className="text-base sm:text-lg text-slate-600 leading-relaxed font-normal max-w-xl">
+                      AI와 데이터를 공부하고, 실제 문제를 정의하여 코드로 구현하며, 검증과 운영 영역까지 지속적으로 고민합니다.
+                    </p>
+
+                    <div className="flex flex-wrap gap-3 pt-2">
+                      <button onClick={() => scrollTo('voiceguide')} className="inline-flex items-center px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all shadow-lg shadow-blue-600/25 hover:scale-[1.02]">
+                        대표 프로젝트 보기
+                        <ChevronRightIcon className="w-4 h-4 ml-1" />
+                      </button>
+                      <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="inline-flex items-center px-6 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm transition-all border border-slate-200">
+                        <GithubIcon className="w-4 h-4 mr-2" />
+                        GitHub 보기
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <div className="relative mx-auto max-w-md bg-gradient-to-tr from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-6 text-white shadow-2xl border border-slate-700/50">
+                      <div className="flex items-center justify-between pb-4 border-b border-slate-700/60 mb-4">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        </div>
+                        <span className="text-xs font-mono text-slate-400">system_architecture.v2</span>
+                      </div>
+
+                      <div className="relative h-64 flex flex-col justify-between items-center py-2">
+                        <div className="w-full grid grid-cols-3 gap-2 text-center text-xs">
+                          <div className="bg-slate-800/80 p-2.5 rounded-lg border border-blue-500/30 flex flex-col items-center">
+                            <CpuIcon className="w-5 h-5 text-blue-400 mb-1" />
+                            <span className="font-bold text-blue-200">On-Device</span>
+                          </div>
+                          <div className="bg-slate-800/80 p-2.5 rounded-lg border border-indigo-500/30 flex flex-col items-center">
+                            <WorkflowIcon className="w-5 h-5 text-indigo-400 mb-1" />
+                            <span className="font-bold text-indigo-200">RAG Agent</span>
+                          </div>
+                          <div className="bg-slate-800/80 p-2.5 rounded-lg border border-emerald-500/30 flex flex-col items-center">
+                            <GaugeIcon className="w-5 h-5 text-emerald-400 mb-1" />
+                            <span className="font-bold text-emerald-200">GPU Infra</span>
+                          </div>
+                        </div>
+
+                        <div className="relative my-2">
+                          <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-black text-2xl shadow-xl shadow-blue-500/30 animate-pulse">
+                            AI
+                          </div>
+                          <div className="absolute -inset-1 bg-blue-500 rounded-2xl blur-lg opacity-30 -z-10"></div>
+                        </div>
+
+                        <div className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 text-xs font-mono space-y-1.5">
+                          <div className="flex justify-between text-slate-300">
+                            <span>STATUS:</span>
+                            <span className="text-emerald-400 font-bold">ONLINE (99.9%)</span>
+                          </div>
+                          <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full w-[85%] rounded-full"></div>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-slate-400 pt-0.5">
+                            <span>Latency: 14ms</span>
+                            <span>Optimization: Active</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-10 pt-8 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {[
+                    { title: 'AI SYSTEMS', desc: '문제 해결을 위한 AI 시스템 설계·구현', icon: BrainCircuitIcon, color: 'text-blue-600 bg-blue-50' },
+                    { title: 'RAG & AGENT', desc: '검색과 추론을 연결하는 서비스', icon: BotIcon, color: 'text-indigo-600 bg-indigo-50' },
+                    { title: 'ON-DEVICE AI', desc: '모바일/임베디드 디바이스 AI 적용', icon: SmartphoneIcon, color: 'text-violet-600 bg-violet-50' },
+                    { title: 'INFRASTRUCTURE', desc: 'GPU·서버 상태 안정성 모니터링', icon: ServerIcon, color: 'text-emerald-600 bg-emerald-50' },
+                    { title: 'DATA PRODUCT', desc: '자동화 데이터 파이프라인/대시보드 구축', icon: DatabaseIcon, color: 'text-amber-600 bg-amber-50' },
+                  ].map((item, idx) => {
+                    const IconComp = item.icon;
+                    return (
+                      <div key={idx} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/60 hover:border-blue-300 transition-all">
+                        <div className="flex items-center space-x-2 mb-1.5">
+                          <div className={`p-1.5 rounded-lg ${item.color}`}>
+                            <IconComp className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-black tracking-wider text-slate-800">{item.title}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 leading-snug">{item.desc}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {}
+            <section id="about" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-10">
+                <div>
+                  <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">About Me</span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+                    배우는 것에서 끝나지 않고,<br className="sm:hidden" /> 직접 만들고 검증하며 이해합니다.
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  <div className="lg:col-span-7 space-y-4 text-slate-600 text-sm sm:text-base leading-relaxed font-normal">
+                    <p>
+                      Python과 Git 기초에서 시작해 데이터 분석, 머신러닝, 딥러닝, NLP를 학습했고 이후 RAG, Agent, 온디바이스 AI, 모델 평가와 인프라 영역까지 학습 범위를 넓혔습니다.
+                    </p>
+                    <p>
+                      학습한 기술을 단순 코드 작성에 머물지 않고, 실제 서빙, AI 서비스, 데이터 파이프라인, 서빙 서버, 개발 도구로 직접 구현해왔습니다.
+                    </p>
+                  </div>
+
+                  {/* Dual-Monitor Workspace Image Frame */}
+                  <div className="lg:col-span-5">
+                    <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-800 bg-slate-950 group">
+                      <img 
+                        src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80" 
+                        alt="Developer Workspace with Dual Monitors" 
+                        className="w-full h-64 object-cover object-center group-hover:scale-105 transition-transform duration-500 opacity-90"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-900/80 to-transparent p-4 flex items-center justify-between text-xs font-mono text-white">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span className="font-bold text-slate-200">Dev Environment</span>
+                        </div>
+                        <span className="text-[10px] text-blue-400 bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-700">
+                          VS Code + Dual Monitor
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-slate-100">
+                  <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <SparklesIcon className="w-5 h-5 text-blue-600" />
+                    나의 강점
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-3 relative hover:shadow-md transition-shadow">
+                      <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20">1</div>
+                      <h4 className="font-bold text-slate-900 text-base">학습한 AI 기술을<br />실제 시스템에 적용한다</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed">이론과 실습에 그치지 않고 문제 정의부터 실제 서비스를 이용할 수 있도록 풀스택/엔지니어링 코드로 연결합니다.</p>
+                      <div className="pt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold text-blue-700">
+                        <span className="bg-blue-100/80 px-2.5 py-1 rounded-md">VoiceGuide</span>
+                        <span className="bg-blue-100/80 px-2.5 py-1 rounded-md">Rainbow Bridge</span>
+                        <span className="bg-blue-100/80 px-2.5 py-1 rounded-md">Lease-Companion</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-3 relative hover:shadow-md transition-shadow">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-indigo-500/20">2</div>
+                      <h4 className="font-bold text-slate-900 text-base">AI 결과와 품질을<br />검증하고 측정한다</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed">테스트 결과와 데이터 품질, 응답 속도를 다각도로 측정하고 정량적 지표를 기반으로 서비스 구조를 지속 수정합니다.</p>
+                      <div className="pt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold text-indigo-700">
+                        <span className="bg-indigo-100/80 px-2.5 py-1 rounded-md">Rainbow Bridge (GPU 평가)</span>
+                        <span className="bg-indigo-100/80 px-2.5 py-1 rounded-md">StelLive Data Dashboard</span>
+                        <span className="bg-indigo-100/80 px-2.5 py-1 rounded-md">ReportMat (문서 검증)</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 space-y-3 relative hover:shadow-md transition-shadow">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-emerald-500/20">3</div>
+                      <h4 className="font-bold text-slate-900 text-base">장애와 운영까지 고려해<br />시스템을 완성한다</h4>
+                      <p className="text-xs text-slate-600 leading-relaxed">VRAM 오버플로우, 네트워크 지연, 예외 처리 등 실제 서빙에서 일어날 수 있는 장애에 대비해 폴백과 모니터링 체계를 구축합니다.</p>
+                      <div className="pt-2 flex flex-wrap gap-1.5 text-[11px] font-semibold text-emerald-700">
+                        <span className="bg-emerald-100/80 px-2.5 py-1 rounded-md">Rainbow Bridge (GPU 안정성)</span>
+                        <span className="bg-emerald-100/80 px-2.5 py-1 rounded-md">VoiceGuide (온디바이스)</span>
+                        <span className="bg-emerald-100/80 px-2.5 py-1 rounded-md">VoiceGuide (모니터링)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {}
+            <section id="voiceguide" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-8">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                      <SmartphoneIcon className="w-3.5 h-3.5" />
+                      온디바이스 AI 프로젝트
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                      VoiceGuide <span className="text-lg font-bold text-slate-500 block sm:inline font-normal">| 시각장애인을 위한 온디바이스 AI 보행 보조 앱</span>
+                    </h2>
+                  </div>
+                  <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm">
+                    <GithubIcon className="w-4 h-4 mr-1.5" />
+                    GitHub 보기
+                  </a>
+                </div>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {['Android', 'Kotlin', 'TFLite', 'YOLOv11', 'Tracking', 'Haptic', 'TTS', 'FastAPI'].map((tech) => (
+                    <span key={tech} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  <div className="lg:col-span-7 space-y-4">
+                    <div className="bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-xl relative">
+                      <div className="bg-slate-900 px-4 py-2 flex items-center justify-between border-b border-slate-800 text-xs">
+                        <span className="text-slate-300 font-mono flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                          Tracking ID: 12 (ByteTrack)
+                        </span>
+                        <span className="text-emerald-400 font-mono font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                          TFLite GPU Delegate
+                        </span>
+                      </div>
+
+                      <div className="relative h-64 sm:h-72 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                        
+                        <div className="absolute top-12 left-12 border-2 border-red-500 bg-red-500/10 rounded p-2 text-[10px] font-mono text-white">
+                          <span className="bg-red-600 px-1.5 py-0.5 rounded font-bold">기둥: HIGH (1.2m)</span>
+                        </div>
+
+                        <div className="absolute bottom-10 right-16 border-2 border-blue-400 bg-blue-500/10 rounded p-2 text-[10px] font-mono text-white">
+                          <span className="bg-blue-600 px-1.5 py-0.5 rounded font-bold">오른쪽 차량 주의 (1.8m)</span>
+                        </div>
+
+                        <div className="z-10 bg-slate-900/90 border border-red-500/50 rounded-xl p-4 text-center space-y-2 max-w-xs backdrop-blur-sm shadow-2xl">
+                          <div className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 bg-red-950/80 px-2.5 py-1 rounded-full border border-red-800">
+                            <AlertTriangleIcon className="w-3.5 h-3.5" />
+                            위험도: HIGH
+                          </div>
+                          <p className="text-sm font-bold text-white">"전방 1.2m에 장애물(기둥)이 있습니다"</p>
+                          <div className="flex justify-center gap-1">
+                            <span className="w-3 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
+                            <span className="w-3 h-1.5 rounded-full bg-red-500 animate-pulse delay-75"></span>
+                            <span className="w-3 h-1.5 rounded-full bg-red-500 animate-pulse delay-150"></span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-900 p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px] font-mono border-t border-slate-800">
+                        <div><span className="text-slate-400 block">최근 경고</span><span className="text-red-400 font-bold">HIGH</span></div>
+                        <div><span className="text-slate-400 block">차량</span><span className="text-amber-400 font-bold">MEDIUM</span></div>
+                        <div><span className="text-slate-400 block">사람</span><span className="text-emerald-400 font-bold">LOW</span></div>
+                        <div><span className="text-slate-400 block">햅틱 패턴</span><span className="text-purple-400 font-bold">URGENT</span></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-5 space-y-6">
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base mb-3 flex items-center gap-2">
+                        <CheckCircleIcon className="w-4 h-4 text-blue-600" />
+                        핵심 구현
+                      </h3>
+                      <ul className="space-y-2 text-xs sm:text-sm text-slate-600 leading-relaxed font-normal">
+                        <li className="flex items-start gap-2"><span className="text-blue-600 font-bold">•</span><span><strong>YOLOv11 기반</strong> 객체 인식 및 거리 추정 모델 모바일 이식</span></li>
+                        <li className="flex items-start gap-2"><span className="text-blue-600 font-bold">•</span><span><strong>ByteTrack</strong> 활용 객체 추적 및 충돌 위험 판정 로직 구현</span></li>
+                        <li className="flex items-start gap-2"><span className="text-blue-600 font-bold">•</span><span>위험 상황별 단계적 햅틱 패턴 및 실시간 음성 피드백</span></li>
+                        <li className="flex items-start gap-2"><span className="text-blue-600 font-bold">•</span><span><strong>TFLite GPU Delegate</strong> + NNAPI Fallback 가속 최적화</span></li>
+                        <li className="flex items-start gap-2"><span className="text-blue-600 font-bold">•</span><span>보호자/관리자용 실시간 보행 모니터링 대시보드 서버 연동</span></li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                      <span className="text-xs font-bold text-slate-700 block mb-3">시스템 구성 (System Architecture)</span>
+                      <div className="flex items-center justify-between gap-2 text-center text-xs">
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex-1">
+                          <SmartphoneIcon className="w-4 h-4 mx-auto text-blue-600 mb-1" />
+                          <span className="font-bold text-slate-800 block text-[11px]">Android App</span>
+                          <span className="text-[10px] text-slate-400">온디바이스 추론</span>
+                        </div>
+                        <ChevronRightIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex-1">
+                          <ServerIcon className="w-4 h-4 mx-auto text-indigo-600 mb-1" />
+                          <span className="font-bold text-slate-800 block text-[11px]">FastAPI Server</span>
+                          <span className="text-[10px] text-slate-400">위치/이벤트 수집</span>
+                        </div>
+                        <ChevronRightIcon className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm flex-1">
+                          <ActivityIcon className="w-4 h-4 mx-auto text-emerald-600 mb-1" />
+                          <span className="font-bold text-slate-800 block text-[11px]">Dashboard</span>
+                          <span className="text-[10px] text-slate-400">실시간 모니터링</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {}
+            <section id="rainbow-bridge" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-8">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-full border border-purple-100">
+                      <Volume2Icon className="w-3.5 h-3.5" />
+                      AI 음성 인프라 및 평가 시스템
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                      Rainbow Bridge <span className="text-lg font-bold text-slate-500 block sm:inline font-normal">| AI 음성 서비스 인프라 및 평가 시스템</span>
+                    </h2>
+                  </div>
+                  <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm">
+                    <GithubIcon className="w-4 h-4 mr-1.5" />
+                    GitHub 보기
+                  </a>
+                </div>
+
+                <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                  반려동물 이별 케어 서비스에서 GPU 기반 TTS 서비스 구축과 음성 품질 평가, 회복 평가 시스템을 안정화하였습니다.
+                </p>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {['Python', 'FastAPI', 'Qwen3 TTS', 'GPU', 'Evaluation', 'PyTorch', 'faster-whisper'].map((tech) => (
+                    <span key={tech} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  <div className="lg:col-span-6 bg-slate-900 rounded-2xl p-5 border border-slate-800 text-white space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <ActivityIcon className="w-4 h-4 text-purple-400" />
+                        <span className="font-bold text-sm">TTS Service Panel</span>
+                      </div>
+                      <span className="text-emerald-400 text-xs font-mono font-semibold bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded">● Healthy</span>
+                    </div>
+
+                    <div className="space-y-3 text-xs">
+                      <div>
+                        <label className="text-slate-400 block mb-1">Input Text (합성할 텍스트)</label>
+                        <textarea 
+                          value={ttsText}
+                          onChange={(e) => setTtsText(e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-purple-500 text-xs font-mono resize-none h-20"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-400 block mb-1">Voice Profile</label>
+                          <select value={ttsVoice} onChange={(e) => setTtsVoice(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-slate-200 text-xs focus:outline-none">
+                            <option value="girl">Warm Girl</option>
+                            <option value="warm">Comforting Male</option>
+                            <option value="soft">Soft Whisper</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-slate-400 block mb-1">Engine</label>
+                          <input type="text" readOnly value="Qwen3 TTS" className="w-full bg-slate-800/60 border border-slate-700/60 rounded-lg p-2 text-slate-400 text-xs font-mono" />
+                        </div>
+                      </div>
+
+                      <button onClick={handleTtsGenerate} disabled={isGeneratingTts} className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30">
+                        {isGeneratingTts ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>GPU 음성 합성 중...</span>
+                          </>
+                        ) : (
+                          <>
+                            <PlayIcon className="w-3.5 h-3.5 fill-current" />
+                            <span>Generate Voice</span>
+                          </>
+                        )}
+                      </button>
+
+                      {ttsSuccessMsg && (
+                        <div className="p-2.5 rounded-lg bg-purple-950/60 border border-purple-800/80 text-purple-200 text-[11px]">
+                          {ttsSuccessMsg}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-6 bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                      <div className="flex items-center gap-2">
+                        <GaugeIcon className="w-4 h-4 text-blue-600" />
+                        <span className="font-bold text-slate-900 text-sm">GPU Status & Job Queue</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-slate-600">RTX 5060 (8GB)</span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-600 font-medium">VRAM 사용률</span>
+                        <span className="font-bold text-blue-600 font-mono">70% (5.6GB / 8GB)</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div className="bg-blue-600 h-full w-[70%] rounded-full"></div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-xs font-bold text-slate-700 block mb-2">JOB QUEUE (최근 요청)</span>
+                      <div className="space-y-1.5 text-xs font-mono">
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200"><span className="text-slate-600">#df31</span><span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">Done (0.3s)</span></div>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200"><span className="text-slate-600">#a123</span><span className="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span> Processing</span></div>
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-white border border-slate-200"><span className="text-slate-600">#e12d</span><span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">Done (0.4s)</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100 text-xs space-y-2">
+                    <span className="font-extrabold text-purple-900 block text-sm">EVALUATION & METRICS</span>
+                    <p className="text-slate-600 leading-relaxed">TTS Quality (Pronunciation / Volume Stability / Server Log / Recovery Signal / Emotion Trend / Lifestyle Pattern) 다각도 파이프라인 정량 평가.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 text-xs space-y-2">
+                    <span className="font-extrabold text-indigo-900 block text-sm">INCIDENT TIMELINE & RECOVERY</span>
+                    <p className="text-slate-600 leading-relaxed">600ms 타임아웃 장애 원인 분석 (VRAM 문제 추정) → Timeout 수정 후 약 150s~300s 긴 합성 요청 정상 처리 및 안정성 확보.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {}
+            <section id="lease-companion" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-8">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                      <FileSearchIcon className="w-3.5 h-3.5" />
+                      생성형 AI 서류 분석 서비스
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+                      Lease-Companion <span className="text-lg font-bold text-slate-500 block sm:inline font-normal">| 계약 확인 및 권리 분석 지원 서비스</span>
+                    </h2>
+                  </div>
+                  <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-all shadow-sm">
+                    <GithubIcon className="w-4 h-4 mr-1.5" />
+                    GitHub 보기
+                  </a>
+                </div>
+
+                <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                  계약서와 등기사항증명서를 분석하고, 사용자가 스스로 확인 할 수 있도록 권리 분석과 근거 항목을 정밀 추출하여 제공합니다.
+                </p>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {['Python', 'FastAPI', 'React', 'TypeScript', 'PostgreSQL', 'Gemini', 'RAG'].map((tech) => (
+                    <span key={tech} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200">
+                  <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                        <FileTextIcon className="w-4 h-4 text-emerald-600" />
+                        1. 임대차계약서 PDF
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400">Page {pdfPage} / 9</span>
+                    </div>
+
+                    <div className="bg-slate-100 rounded-lg h-52 p-4 flex flex-col justify-between text-[11px] text-slate-500 font-mono border border-slate-200">
+                      <div className="space-y-2">
+                        <div className="font-bold text-slate-800 text-xs border-b border-slate-300 pb-1">부동산 임대차 계약서</div>
+                        <p>소재지: 서울특별시 강남구 테헤란로 123</p>
+                        <p>보증금: 금 150,000,000 원</p>
+                        <p>임대인: 홍길동 / 임차인: 성춘향</p>
+                        <p>임대기간: 2024.05.01 ~ 2026.04.30</p>
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-emerald-600 font-bold bg-emerald-50 p-1.5 rounded">
+                        <span>Gemini OCR Extracted</span>
+                        <span>100% Match</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between gap-2 text-xs">
+                      <button onClick={() => setPdfPage(Math.max(1, pdfPage - 1))} className="flex-1 py-1 bg-slate-100 hover:bg-slate-200 rounded font-semibold text-slate-700">이전 페이지</button>
+                      <button onClick={() => setPdfPage(Math.min(9, pdfPage + 1))} className="flex-1 py-1 bg-slate-100 hover:bg-slate-200 rounded font-semibold text-slate-700">다음 페이지</button>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <span className="font-bold text-xs text-slate-800 block border-b border-slate-100 pb-2">
+                      2. 추출된 정보 (사용자 확인)
+                    </span>
+                    <div className="space-y-2.5 text-xs">
+                      {[
+                        { label: '주소', val: '서울시 강남구 테헤란로 123' },
+                        { label: '보증금', val: '150,000,000 원' },
+                        { label: '임대인', val: '홍길동' },
+                        { label: '임대기간', val: '2024.05.01 ~ 2026.04.30' },
+                      ].map((info, idx) => (
+                        <div key={idx} className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                          <div>
+                            <span className="text-[10px] text-slate-400 block">{info.label}</span>
+                            <span className="font-semibold text-slate-800">{info.val}</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">확인 완료</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <span className="font-bold text-xs text-slate-800 block border-b border-slate-100 pb-2">
+                      3. 확인 및 분석 결과
+                    </span>
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
+                        <div className="flex items-center justify-between font-bold text-[11px]">
+                          <span>01. 선순위채권 확인</span>
+                          <span className="text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">주의 요망</span>
+                        </div>
+                        <p className="text-[11px] text-amber-800">근저당권 설정액이 매매가 대비 60% 이상 설정되어 있습니다.</p>
+                      </div>
+
+                      <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
+                        <div className="flex items-center justify-between font-bold text-[11px]">
+                          <span>02. 권리자 일치 여부</span>
+                          <span className="text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">일치</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-800">등기부상 소유자와 계약서 임대인이 동일인임을 확인했습니다.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* INTERACTIVE CORE PIPELINE FLOW */}
+                <div className="pt-4 border-t border-slate-100 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-emerald-600 uppercase tracking-widest block">System Architecture Pipeline</span>
+                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-0.5 flex items-center gap-2">
+                        <WorkflowIcon className="w-5 h-5 text-emerald-600" />
+                        핵심 분석 파이프라인 (RAG & Rule Engine Flow)
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 relative">
+                    {pipelineSteps.map((s, index) => {
+                      const IconComponent = s.icon;
+                      const isActive = activePipelineStep === index;
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => setActivePipelineStep(index)}
+                          className={`cursor-pointer rounded-2xl p-3.5 border transition-all duration-300 relative flex flex-col justify-between ${
+                            isActive 
+                              ? 'bg-slate-900 text-white border-slate-800 shadow-xl scale-[1.03] ring-2 ring-emerald-500/50' 
+                              : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200/80 hover:border-emerald-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-200 text-slate-600'}`}>
+                              STEP 0{s.id}
+                            </span>
+                          </div>
+
+                          <div className="space-y-1 mb-2">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-1.5 ${isActive ? 'bg-slate-800 text-emerald-400' : 'bg-white text-slate-700 shadow-sm border border-slate-200'}`}>
+                              <IconComponent className="w-4 h-4" />
+                            </div>
+                            <h4 className={`font-extrabold text-xs sm:text-sm leading-tight ${isActive ? 'text-white' : 'text-slate-900'}`}>{s.title}</h4>
+                            <span className={`text-[10px] font-semibold block ${isActive ? 'text-emerald-400' : 'text-slate-500'}`}>{s.sub}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 shadow-xl">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                      <div className="lg:col-span-7 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-md bg-emerald-950 text-emerald-400 border border-emerald-800">
+                            ACTIVE STEP 0{pipelineSteps[activePipelineStep].id}
+                          </span>
+                          <h4 className="text-base font-extrabold text-white">
+                            {pipelineSteps[activePipelineStep].title} — <span className="text-emerald-400">{pipelineSteps[activePipelineStep].sub}</span>
+                          </h4>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">{pipelineSteps[activePipelineStep].desc}</p>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-slate-400 font-mono">핵심 기술:</span>
+                          <span className="px-2.5 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono font-semibold border border-slate-700">{pipelineSteps[activePipelineStep].tech}</span>
+                        </div>
+                      </div>
+
+                      <div className="lg:col-span-5 bg-slate-950/80 p-4 rounded-xl border border-slate-800/90 text-xs font-mono space-y-2.5">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
+                          <span className="text-slate-400">INPUT</span>
+                          <span className="text-slate-200 font-semibold">{pipelineSteps[activePipelineStep].input}</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-0.5">
+                          <span className="text-slate-400">OUTPUT</span>
+                          <span className="text-emerald-400 font-semibold">{pipelineSteps[activePipelineStep].output}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            {}
+            <section id="more-projects" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-8">
+                <div>
+                  <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Portfolio Grid</span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">
+                    More Projects <span className="text-lg font-bold text-slate-500 font-normal">| 프로젝트 모음</span>
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[
+                    { title: 'RepoPilot', desc: '파일과 코드 근거를 연결하는 GitHub 분석 Agent', highlights: ['Evidence-backed Analysis', 'Static Analysis & Retrieval', 'Patch & Test Generation'], tags: ['Python', 'FastAPI', 'Next.js'], icon: BotIcon, color: 'text-blue-600 bg-blue-50' },
+                    { title: 'Personal AI Studio', desc: '여러 제안 아이디어 소스를 하나로 통합한 RAG 워크스페이스', highlights: ['Multi-source RAG', 'Source Card & Metadata', 'Provider Fallback'], tags: ['Python', 'Streamlit', 'MongoDB'], icon: BoxesIcon, color: 'text-indigo-600 bg-indigo-50' },
+                    { title: 'StelLive Data Dashboard', desc: '수집부터 대시보드 생성, 리포트까지의 데이터 제품', highlights: ['Multi Collector', 'GitHub Actions Automation', 'Auto Deploy (Pages)'], tags: ['Python', 'API', 'GitHub Actions'], icon: ActivityIcon, color: 'text-violet-600 bg-violet-50' },
+                    { title: 'AI Search Agent', desc: '복잡한 업무에 대한 검색을 수행하는 React 기반 소형 Agent', highlights: ['React + Search', 'Limited Iteration', 'FastAPI Service'], tags: ['Gemini', 'LangChain', 'FastAPI'], icon: SearchIcon, color: 'text-amber-600 bg-amber-50' },
+                    { title: 'ARKAN: Forgotten Throne', desc: 'Vanilla JS로 구현한 상방 기반 웹 RPG 게임', highlights: ['State Management', 'Battle / World Map', 'Canvas Rendering'], tags: ['JavaScript', 'Canvas', 'Playwright'], icon: CodeIcon, color: 'text-emerald-600 bg-emerald-50' },
+                    { title: 'Claude Code PowerShell Kit', desc: 'Windows 환경에서 안전한 AI 코딩을 위한 PowerShell 도구', highlights: ['Safety Hook (PreToolUse)', 'Risky Command Detection', 'Testing & Tooling'], tags: ['PowerShell', 'Claude Code', 'Hooks'], icon: TerminalIcon, color: 'text-rose-600 bg-rose-50' },
+                  ].map((proj, idx) => {
+                    const IconComponent = proj.icon;
+                    return (
+                      <div key={idx} className="bg-slate-50 hover:bg-white rounded-2xl p-6 border border-slate-200 hover:border-blue-300 transition-all flex flex-col justify-between space-y-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`p-2.5 rounded-xl ${proj.color}`}><IconComponent className="w-5 h-5" /></div>
+                            <h3 className="font-extrabold text-slate-900 text-lg">{proj.title}</h3>
+                          </div>
+                          <p className="text-xs text-slate-600 leading-relaxed">{proj.desc}</p>
+                          <ul className="space-y-1 text-xs text-slate-500 font-mono">
+                            {proj.highlights.map((h, i) => (
+                              <li key={i} className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span><span>{h}</span></li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="pt-4 border-t border-slate-200/60 flex items-center justify-between">
+                          <div className="flex flex-wrap gap-1">
+                            {proj.tags.map((t) => (
+                              <span key={t} className="px-2 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-semibold text-slate-600">{t}</span>
+                            ))}
+                          </div>
+                          <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="text-xs font-bold text-slate-800 hover:text-blue-600 flex items-center gap-1">
+                            <GithubIcon className="w-3.5 h-3.5" /> 보기
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {}
+            <section id="journey" className="scroll-mt-20">
+              <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                  
+                  {/* Learning Journey */}
+                  <div className="lg:col-span-5 space-y-6">
+                    <div>
+                      <span className="text-xs font-bold text-blue-600 uppercase tracking-widest">Growth Path</span>
+                      <h2 className="text-2xl font-extrabold text-slate-900 mt-1">
+                        Learning Journey <span className="text-sm text-slate-500 font-normal">| 학습 여정</span>
+                      </h2>
+                    </div>
+
+                    <div className="relative pl-6 space-y-5 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                      {[
+                        { title: 'Programming Fundamentals', desc: 'Python, Git, NumPy, 확률, 통계, 선형대수', badge: 'Step 01' },
+                        { title: 'Data & Machine Learning', desc: 'Pandas, EDA, Feature Engineering, ML, DL, CNN', badge: 'Step 02' },
+                        { title: 'NLP & Language Models', desc: 'RAG, Embedding, Attention, Transformer, BERT', badge: 'Step 03' },
+                        { title: 'AI Systems', desc: 'RAG, LangChain, LangGraph, Agent, RAGAS, Multimodal, MCP, Guardrails', badge: 'Step 04' },
+                        { title: 'Product & Operations', desc: 'Android, FastAPI, GPU Serving, Docker, Cloud, GitHub Actions, Monitoring', badge: 'Step 05' },
+                      ].map((step, idx) => (
+                        <div key={idx} className="relative group">
+                          <div className="absolute -left-[30px] top-1 w-3 h-3 rounded-full bg-blue-600 ring-4 ring-white"></div>
+                          <div className="bg-slate-50 group-hover:bg-blue-50/50 p-3.5 rounded-xl border border-slate-200 transition-colors">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-bold text-slate-900 text-sm">{step.title}</span>
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded">{step.badge}</span>
+                            </div>
+                            <p className="text-xs text-slate-600">{step.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-blue-900 flex items-center gap-1.5">
+                          <BookOpenIcon className="w-4 h-4 text-blue-600" />
+                          Review-Estcamp-AI-Human
+                        </span>
+                        <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="text-xs font-bold text-blue-700 hover:underline flex items-center gap-1">
+                          GitHub 보기 <ChevronRightIcon className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        Python부터 Transformer/BERT까지 학습 내용을 정리해둔 HTML 교재로 학습 기록을 투명하게 관리하고 있습니다.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Interactive Tech Stack */}
+                  <div id="tech-stack" className="lg:col-span-7 space-y-6 scroll-mt-20">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Core Competency</span>
+                        <h2 className="text-2xl font-extrabold text-slate-900 mt-1">
+                          Tech Stack <span className="text-sm text-slate-500 font-normal">| 보유 기술 스택</span>
+                        </h2>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-1.5 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80 text-xs font-bold">
+                      {[
+                        { id: 'all', label: '전체 (All)' },
+                        { id: 'ai', label: 'AI / ML' },
+                        { id: 'backend', label: 'Backend & Data' },
+                        { id: 'mobile', label: 'Mobile & Web' },
+                        { id: 'devops', label: 'DevOps & Infra' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setTechFilter(cat.id)}
+                          className={`px-3 py-1.5 rounded-xl transition-all ${
+                            techFilter === cat.id 
+                              ? 'bg-white text-indigo-700 shadow-sm font-black' 
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {filteredTechs.map((techItem) => {
+                        const globalIdx = techStackList.findIndex(t => t.name === techItem.name);
+                        const isSelected = selectedTechIndex === globalIdx;
+                        const IconComp = techItem.icon;
+
+                        return (
+                          <div
+                            key={techItem.name}
+                            onClick={() => setSelectedTechIndex(globalIdx)}
+                            className={`cursor-pointer rounded-2xl p-4 border transition-all duration-200 flex flex-col justify-between space-y-3 ${
+                              isSelected
+                                ? 'bg-slate-900 text-white border-indigo-500 shadow-lg ring-2 ring-indigo-500/30'
+                                : 'bg-slate-50 hover:bg-white text-slate-800 border-slate-200 hover:border-indigo-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5">
+                                <div className={`p-2 rounded-xl ${isSelected ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-600 border border-slate-200 shadow-sm'}`}>
+                                  <IconComp className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h4 className={`font-extrabold text-sm ${isSelected ? 'text-white' : 'text-slate-900'}`}>{techItem.name}</h4>
+                                  <span className={`text-[10px] font-mono block ${isSelected ? 'text-indigo-300' : 'text-slate-400'}`}>{techItem.categoryLabel}</span>
+                                </div>
+                              </div>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${isSelected ? 'bg-indigo-950 text-indigo-300 border-indigo-800' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                                {techItem.badge}
+                              </span>
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-200/40 flex flex-wrap gap-1">
+                              {techItem.projects.map((p) => (
+                                <span key={p} className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isSelected ? 'bg-slate-800 text-indigo-200 border border-slate-700' : 'bg-white text-slate-600 border border-slate-200'}`}>
+                                  #{p}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="bg-slate-900 text-white rounded-2xl p-5 border border-slate-800 shadow-xl relative overflow-hidden">
+                      <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                        <div className="flex items-center gap-2">
+                          <SlidersIcon className="w-4 h-4 text-indigo-400" />
+                          <span className="text-xs font-mono font-bold text-slate-300 uppercase">Tech Inspector</span>
+                        </div>
+                        <span className="text-[11px] font-bold text-indigo-400 bg-indigo-950 border border-indigo-800 px-2.5 py-0.5 rounded-full">
+                          {currentTech.badge}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+                            {currentTech.name}
+                            <span className="text-xs font-mono font-normal text-slate-400">({currentTech.categoryLabel})</span>
+                          </h3>
+                          <p className="text-xs text-slate-300 leading-relaxed mt-1 font-normal">{currentTech.desc}</p>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-800/80">
+                          <span className="text-[11px] font-bold text-slate-400 block mb-2">실제 적용 포트폴리오 프로젝트:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {currentTech.projects.map((proj) => (
+                              <div key={proj} className="flex items-center gap-1.5 bg-slate-800/90 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-200">
+                                <CheckSquareIcon className="w-3.5 h-3.5 text-indigo-400" />
+                                <span>{proj}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
+          </main>
+
+          {}
+          <footer className="bg-white border-t border-slate-200 mt-16 py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-base">JJ</div>
+                  <span className="font-extrabold text-slate-900 text-lg">Jeonghwan Ju <span className="text-xs font-bold text-blue-600">AI Engineer</span></span>
+                </div>
+                <p className="text-xs text-slate-500">문제를 정의하고, 엔지니어링으로 해결하는 개발자</p>
+                <div className="flex items-center space-x-4 text-xs font-semibold text-slate-600">
+                  <a href="mailto:coding.jhjrf@gmail.com" className="hover:text-blue-600 transition-colors flex items-center gap-1">
+                    <MailIcon className="w-3.5 h-3.5" /> coding.jhjrf@gmail.com
+                  </a>
+                  <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition-colors flex items-center gap-1">
+                    <GithubIcon className="w-3.5 h-3.5" /> GitHub.com/coding-jhj
+                  </a>
+                </div>
+              </div>
+              <div className="border-t border-slate-100 pt-6 text-center text-xs text-slate-400">
+                © 2025 Jeonghwan Ju. All rights reserved.
+              </div>
+            </div>
+          </footer>
+        </div>
+      );
+    }
+
+    // Mount React App
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
