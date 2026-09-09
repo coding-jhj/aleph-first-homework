@@ -1,19 +1,19 @@
 # T08 Passkey Private Portfolio 구현 문서
 
-상태: 코드·문서·정적 검증 구현 완료. 실제 WebAuthn 기기 테스트와 배포 증거는 Supabase 활성화 및 Vercel 환경변수 입력 후 기록해야 한다.
+상태: Neon PostgreSQL 전환, 코드·문서·정적 검증 구현 완료. 실제 WebAuthn 기기 테스트와 배포 증거는 Neon 데이터베이스와 Vercel 환경변수 입력 후 기록해야 한다.
 
 ## ① 무엇을 사용했나
 
 - 직접 구현: 공개 포트폴리오 안의 public/private 경계 UI, 등록·로그인·로그아웃·패스키 삭제 흐름, 계정 소유권 검사, HttpOnly 세션 쿠키, challenge 일회성 소비, 보안 이벤트 기록.
-- 브라우저 인증: 표준 Web Authentication API의 navigator.credentials.create/get.
-- 서버 검증 라이브러리: @simplewebauthn/server 13.3.3. 사용 API는 generateRegistrationOptions, verifyRegistrationResponse, generateAuthenticationOptions, verifyAuthenticationResponse다.
-- 데이터베이스 클라이언트: @supabase/supabase-js 2.116.0.
-- 인증 서비스: 별도의 비밀번호 인증이나 OAuth가 아니라 WebAuthn passkey를 직접 검증한다. Supabase는 계정·공개 키·challenge·세션·private 자료·보안 이벤트를 저장하는 Postgres로 사용한다.
-- 실행 환경: Vercel Node.js Functions. 브라우저에는 Supabase 키나 서버 secret을 전달하지 않는다.
+- 브라우저 인증: 표준 Web Authentication API의 `navigator.credentials.create/get`.
+- 서버 검증 라이브러리: `@simplewebauthn/server` 13.3.3. 사용 API는 `generateRegistrationOptions`, `verifyRegistrationResponse`, `generateAuthenticationOptions`, `verifyAuthenticationResponse`다.
+- 데이터베이스: Neon이 제공하는 managed PostgreSQL.
+- 데이터베이스 클라이언트: `@neondatabase/serverless` 1.1.0. 모든 SQL은 서버 함수에서 parameterized query로 실행한다.
+- 실행 환경: Vercel Node.js Functions. 브라우저에는 `DATABASE_URL`이나 서버 secret을 전달하지 않는다.
 
 ## ② 왜 이렇게 사용했나
 
-T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 challenge와 공개 키로 서명을 검증한 뒤에만 private 응답을 내리는가”다. 따라서 계정별 passkey public key와 authenticator counter는 데이터베이스에 저장하고, private 응답은 세션의 account_id로만 조회한다.
+T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 challenge와 공개 키로 서명을 검증한 뒤에만 private 응답을 내리는가”다. 따라서 계정별 passkey public key와 authenticator counter는 PostgreSQL에 저장하고, private 응답은 세션의 `account_id`로만 조회한다.
 
 패스키의 private key는 기기·보안 키 밖으로 전송하지 않는다. 서버에는 검증용 public key만 저장한다. 세션 cookie에는 opaque random token을 넣고 데이터베이스에는 SHA-256 digest만 저장한다. security event에는 raw session, signature, credential material을 남기지 않고 짧은 fingerprint만 남긴다.
 
@@ -25,40 +25,41 @@ T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 cha
 
 | 사용자 흐름 | 구현 위치 | 서버에서 확인하는 것 |
 | --- | --- | --- |
-| 첫 passkey 등록 옵션 | api/passkeys/register-options.js | 새 registration challenge를 만들고 t08_webauthn_challenges에 저장 |
-| 첫 passkey 등록 검증 | api/passkeys/register-verify.js | challenge 만료·재사용 여부, origin, RP ID, attestation 서명 검증 후에만 account/passkey/private seed 생성 |
-| 추가 passkey 등록 | 같은 register-options/register-verify | 현재 HttpOnly session의 account_id를 기준으로만 등록 |
-| passkey 로그인 옵션 | api/passkeys/auth-options.js | 계정의 등록 credential만 allowCredentials로 넣고 매번 새 authentication challenge 생성 |
-| passkey 로그인 검증 | api/passkeys/auth-verify.js | challenge 일회성 소비, credential 소유 계정 일치, 저장 public key 서명, origin/RP ID, user verification, counter 검증 후 세션 생성 |
-| 로그아웃 | api/session/logout.js | 현재 token digest의 세션을 revoked 처리하고 cookie 삭제 |
-| 내 private 자료 읽기 | api/private/items.js | request body/query의 계정 값이 아니라 session.account_id로만 조회 |
-| 다른 계정 URL 접근 | api/private/accounts/[accountId]/items.js | URL accountId가 session.account_id와 다르면 403과 authorization_denied 이벤트 |
-| 패스키 목록/삭제 | api/passkeys/index.js, api/passkeys/[passkeyId].js | 현재 계정의 nickname/date만 노출하고 소유자 일치 시에만 삭제 |
-| 성공·실패·replay 기록 | api/_lib/events.js, api/security/events.js | event type, success, reason code, challenge/credential fingerprint만 기록·조회 |
-| 스키마와 권한 | supabase/migrations/202609090001_t08_passkey_vault.sql | 모든 T08 테이블 RLS 활성화, anon/authenticated 직접 grant 철회 |
+| 첫 passkey 등록 옵션 | `api/passkeys/register-options.js` | 새 registration challenge를 만들고 `t08_webauthn_challenges`에 저장 |
+| 첫 passkey 등록 검증 | `api/passkeys/register-verify.js` | challenge 만료·재사용 여부, origin, RP ID, attestation 서명 검증 후에만 account/passkey/private seed 생성 |
+| 추가 passkey 등록 | 같은 register-options/register-verify | 현재 HttpOnly session의 `account_id`를 기준으로만 등록 |
+| passkey 로그인 옵션 | `api/passkeys/auth-options.js` | 계정의 등록 credential만 allowCredentials로 넣고 매번 새 authentication challenge 생성 |
+| passkey 로그인 검증 | `api/passkeys/auth-verify.js` | challenge 일회성 소비, credential 소유 계정 일치, 저장 public key 서명, origin/RP ID, user verification, counter 검증 후 세션 생성 |
+| 로그아웃 | `api/session/logout.js` | 현재 token digest의 세션을 revoked 처리하고 cookie 삭제 |
+| 내 private 자료 읽기 | `api/private/items.js` | request body/query의 계정 값이 아니라 `session.account_id`로만 조회 |
+| 다른 계정 URL 접근 | `api/private/accounts/[accountId]/items.js` | URL accountId가 session.account_id와 다르면 403과 authorization_denied 이벤트 |
+| 패스키 목록/삭제 | `api/passkeys/index.js`, `api/passkeys/[passkeyId].js` | 현재 계정의 nickname/date만 노출하고 소유자 일치 시에만 삭제 |
+| 성공·실패·replay 기록 | `api/_lib/events.js`, `api/security/events.js` | event type, success, reason code, challenge/credential fingerprint만 기록·조회 |
+| 스키마와 권한 | `db/migrations/202609090001_t08_passkey_vault.sql` | 모든 T08 테이블 RLS 활성화, `PUBLIC` 직접 테이블 권한 철회 |
 
-인증 실패는 401, 계정 scope가 다른 private 요청은 403이다. registration challenge와 authentication challenge는 각각 5분 후 만료되고 consumed_at이 한 번 기록되면 다시 쓸 수 없다.
+인증 실패는 401, 계정 scope가 다른 private 요청은 403이다. registration challenge와 authentication challenge는 각각 5분 후 만료되고 `consumed_at`이 한 번 기록되면 다시 쓸 수 없다.
 
 ## ④ 거부 동작을 증명하는 기록
 
-아래 표는 제출 시 실제 브라우저·API 테스트 결과를 양쪽에 기록하는 형식이다. 현재 작업 환경에는 활성 Supabase 연결과 실제 passkey 기기가 없으므로, 빈 칸을 통과로 표시하지 않았다.
+아래 표는 제출 시 실제 브라우저·API 테스트 결과를 양쪽에 기록하는 형식이다. 현재 작업 환경에는 Neon 연결 문자열과 실제 passkey 기기가 없으므로, 빈 칸을 통과로 표시하지 않았다.
 
 | 검사 | 성공 쪽 | 거부 쪽 | 실제 증거 |
 | --- | --- | --- | --- |
-| no-login private read | passkey 로그인 후 GET /api/private/items가 현재 계정의 synthetic record 3개 이상 반환 | cookie 없이 같은 요청은 401 authentication_required, private body 없음 | 배포 후 기록 필요 |
-| other-passkey / other-account | A로 로그인하면 A 자료만 반환 | A 세션으로 B URL을 읽으면 403 account_scope_mismatch, B 자료·count 없음. B도 역방향 동일 | 배포 후 기록 필요 |
-| challenge replay | 새 login challenge와 정상 assertion으로 200 및 session 생성 | 같은 challenge/assertion을 재전송하면 401 challenge_rejected, challenge_fingerprint 이벤트 기록 | 배포 후 기록 필요 |
-| deleted-passkey login | 두 passkey 중 하나를 삭제한 뒤 남은 passkey로 200 로그인 | 삭제한 credential로 시도하면 401 credential_not_registered 또는 signature_verification_failed 이벤트 기록 | 배포 후 기록 필요 |
+| no-login private read | passkey 로그인 후 GET `/api/private/items`가 현재 계정의 synthetic record 3개 이상 반환 | cookie 없이 같은 요청은 401 `authentication_required`, private body 없음 | 배포 후 기록 필요 |
+| other-passkey / other-account | A로 로그인하면 A 자료만 반환 | A 세션으로 B URL을 읽으면 403 `account_scope_mismatch`, B 자료·count 없음. B도 역방향 동일 | 배포 후 기록 필요 |
+| challenge replay | 새 login challenge와 정상 assertion으로 200 및 session 생성 | 같은 challenge/assertion을 재전송하면 401 `challenge_rejected`, challenge_fingerprint 이벤트 기록 | 배포 후 기록 필요 |
+| deleted-passkey login | 두 passkey 중 하나를 삭제한 뒤 남은 passkey로 200 로그인 | 삭제한 credential로 시도하면 401 `credential_not_registered` 또는 `signature_verification_failed` 이벤트 기록 | 배포 후 기록 필요 |
 
-거부 판정의 source of truth는 api/passkeys/auth-verify.js와 api/private/accounts/[accountId]/items.js다. 보안 이벤트의 예시 응답은 fingerprint만 포함하고 session token·서명·private key는 포함하지 않는다.
+거부 판정의 source of truth는 `api/passkeys/auth-verify.js`와 `api/private/accounts/[accountId]/items.js`다. 보안 이벤트의 예시 응답은 fingerprint만 포함하고 session token·서명·private key는 포함하지 않는다.
 
 ## ⑤ AI가 한 일과 제출자가 결정할 일
 
 ### AI가 수행한 일
 
-- GitHub 저장소의 기존 단일 index.html 전체 구조와 기존 public 섹션을 분석했다.
+- GitHub 저장소의 기존 단일 `index.html` 전체 구조와 기존 public 섹션을 분석했다.
 - T08 requirement.txt의 C01~C53을 기능·보안·문서 항목으로 매핑했다.
-- native WebAuthn 브라우저 변환, Vercel API route, Supabase schema, 계정 scope 검사, 세션·challenge·event 기록을 구현했다.
+- native WebAuthn 브라우저 호출, Vercel API route, Neon PostgreSQL schema, 계정 scope 검사, 세션·challenge·event 기록을 구현했다.
+- 기존 데이터베이스 클라이언트 의존성을 제거하고 `@neondatabase/serverless` 기반 parameterized query로 교체했다.
 - 정적 syntax/check 스크립트를 작성하고 실행 가능한 형태로 구성했다.
 
 ### 현재 반영한 제출자 결정
@@ -75,8 +76,8 @@ T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 cha
 
 ## ⑥ 아직 막혀 있는 구체적 한계
 
-1. 연결된 Supabase 프로젝트가 현재 INACTIVE 상태라서 migration을 원격 적용하지 못했다. 프로젝트를 활성화한 뒤 migration을 적용해야 한다.
-2. Vercel에 PUBLIC_ORIGIN, SUPABASE_URL, SUPABASE_SECRET_KEY를 입력하지 않으면 API는 의도적으로 private 자료를 반환하지 않는다. preview URL을 테스트할 때는 그 preview origin을 별도로 설정해야 한다.
+1. Neon 데이터베이스를 만들고 migration을 원격 적용해야 한다.
+2. Vercel Preview/Production에 `PUBLIC_ORIGIN`, `WEBAUTHN_RP_ID`, `DATABASE_URL` 등을 입력하지 않으면 API는 의도적으로 private 자료를 반환하지 않는다.
 3. 실제 passkey 등록·로그인·삭제·replay 테스트는 HTTPS 브라우저와 플랫폼 authenticator 또는 보안 키가 필요하다. 일반 curl만으로는 유효한 WebAuthn 서명을 만들 수 없으므로 CI 정적 검사만으로 C19~C45 통과를 주장할 수 없다.
 4. 마지막 passkey를 삭제하면 계정의 등록 passkey가 0개가 되고 현재 세션도 종료된다. 복구 이메일이나 관리자 재등록 기능은 이 T08 범위에 넣지 않았다.
 

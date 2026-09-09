@@ -1,6 +1,7 @@
 -- T08 passkey vault schema.
 -- All application reads/writes go through Vercel server functions using the
--- Supabase server secret. Browser clients never receive direct table grants.
+-- Neon/PostgreSQL connection string. Browser clients never receive direct
+-- table grants; the API is the only database client.
 
 create extension if not exists pgcrypto;
 
@@ -103,9 +104,10 @@ alter table public.t08_webauthn_challenges enable row level security;
 alter table public.t08_sessions enable row level security;
 alter table public.t08_auth_events enable row level security;
 
-revoke all on table public.t08_accounts from anon, authenticated;
-revoke all on table public.t08_passkeys from anon, authenticated;
-revoke all on table public.t08_private_items from anon, authenticated;
-revoke all on table public.t08_webauthn_challenges from anon, authenticated;
-revoke all on table public.t08_sessions from anon, authenticated;
-revoke all on table public.t08_auth_events from anon, authenticated;
+-- Neon is plain managed PostgreSQL, so revoke the default PUBLIC privileges.
+revoke all on table public.t08_accounts from public;
+revoke all on table public.t08_passkeys from public;
+revoke all on table public.t08_private_items from public;
+revoke all on table public.t08_webauthn_challenges from public;
+revoke all on table public.t08_sessions from public;
+revoke all on table public.t08_auth_events from public;

@@ -1,23 +1,23 @@
-import { getDb } from './db.js';
+import { queryOne } from './db.js';
 
 export async function getAccountById(id) {
-  const { data, error } = await getDb()
-    .from('t08_accounts')
-    .select('id,handle,display_name,webauthn_user_id,created_at')
-    .eq('id', id)
-    .maybeSingle();
-  if (error) throw error;
-  return data || null;
+  return queryOne(
+    `select id, handle, display_name, webauthn_user_id, created_at
+     from public.t08_accounts
+     where id = $1
+     limit 1`,
+    [id]
+  );
 }
 
 export async function getAccountByHandle(handle) {
-  const { data, error } = await getDb()
-    .from('t08_accounts')
-    .select('id,handle,display_name,webauthn_user_id,created_at')
-    .eq('handle', handle)
-    .maybeSingle();
-  if (error) throw error;
-  return data || null;
+  return queryOne(
+    `select id, handle, display_name, webauthn_user_id, created_at
+     from public.t08_accounts
+     where handle = $1
+     limit 1`,
+    [handle]
+  );
 }
 
 export function publicAccount(account) {

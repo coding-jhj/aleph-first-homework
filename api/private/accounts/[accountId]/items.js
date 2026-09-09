@@ -1,4 +1,4 @@
-import { getDb } from '../../../_lib/db.js';
+import { query } from '../../../_lib/db.js';
 import { requireSession } from '../../../_lib/session.js';
 import { queryValue } from '../../../_lib/route-utils.js';
 import { recordSecurityEvent } from '../../../_lib/events.js';
@@ -26,13 +26,13 @@ export default async function handler(req, res) {
       return;
     }
 
-    const { data: items, error } = await getDb()
-      .from('t08_private_items')
-      .select('id,title,content,created_at,sort_order')
-      .eq('account_id', session.account_id)
-      .order('sort_order', { ascending: true })
-      .order('created_at', { ascending: true });
-    if (error) throw error;
+    const items = await query(
+      `select id, title, content, created_at, sort_order
+       from public.t08_private_items
+       where account_id = $1
+       order by sort_order asc, created_at asc`,
+      [session.account_id]
+    );
 
     sendJson(res, 200, {
       items: items || [],

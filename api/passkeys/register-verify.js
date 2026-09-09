@@ -1,5 +1,5 @@
 import { getConfig } from '../_lib/config.js';
-import { getDb } from '../_lib/db.js';
+import { execute, queryOne } from '../_lib/db.js';
 import { getAccountById, publicAccount } from '../_lib/accounts.js';
 import { getFlowId, findSession, clearFlowCookie, createSession } from '../_lib/session.js';
 import { consumeChallenge, peekChallenge } from '../_lib/challenges.js';
@@ -76,12 +76,13 @@ export default async function handler(req, res) {
     }
 
     const credential = registrationToRow(verification);
-    const { data: existingCredential, error: lookupError } = await getDb()
-      .from('t08_passkeys')
-      .select('id')
-      .eq('credential_id', credential.credential_id)
-      .maybeSingle();
-    if (lookupError) throw lookupError;
+    const existingCredential = await queryOne(
+      `select id
+       from public.t08_passkeys
+       where credential_id = $1
+       limit 1`,
+      [credential.credential_id]
+    );
     if (existingCredential) {
       await recordSecurityEvent({
         accountId: challenge.account_id,
@@ -108,50 +109,49 @@ export default async function handler(req, res) {
         }
       } else {
         const metadata = challenge.metadata || {};
-        const { data: createdAccount, error: accountError } = await getDb()
-          .from('t08_accounts')
-          .insert({
-            handle: String(metadata.handle || challenge.handle || '').toLowerCase(),
-            display_name: String(metadata.displayName || metadata.handle || challenge.handle || 'Synthetic account'),
-            webauthn_user_id: String(metadata.webauthnUserId || '')
-          })
-          .select('id,handle,display_name,webauthn_user_id,created_at')
-          .single();
-        if (accountError) throw accountError;
-        account = createdAccount;
+        account = await queryOne(
+          `insert into public.t08_accounts (handle, display_name, webauthn_user_id)
+           values ($1, $2, $3)
+           returning id, handle, display_name, webauthn_user_id, created_at`,
+          [
+            String(metadata.handle || challenge.handle || '').toLowerCase(),
+            String(metadata.displayName || metadata.handle || challenge.handle || 'Synthetic account'),
+            String(metadata.webauthnUserId || '')
+          ]
+        );
         createdAccountId = account.id;
       }
 
-      const { error: passkeyError } = await getDb()
-        .from('t08_passkeys')
-        .insert({
-          account_id: account.id,
-          credential_id: credential.credential_id,
-          public_key: credential.public_key,
-          counter: credential.counter,
-          transports: credential.transports,
-          device_type: credential.device_type,
-          backed_up: credential.backed_up,
-          nickname: String((challenge.metadata || {}).nickname || '주 사용 기기')
-        });
-      if (passkeyError) throw passkeyError;
+      await execute(
+        `insert into public.t08_passkeys
+          (account_id, credential_id, public_key, counter, transports, device_type, backed_up, nickname)
+         values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          account.id,
+          credential.credential_id,
+          credential.public_key,
+          credential.counter,
+          credential.transports,
+          credential.device_type,
+          credential.backed_up,
+          String((challenge.metadata || {}).nickname || '주 사용 기기')
+        ]
+      );
 
       if (createdAccountId) {
-        const { error: itemError } = await getDb()
-          .from('t08_private_items')
-          .insert(syntheticPrivateItems(account.handle).map((item) => ({
-            account_id: account.id,
-            title: item.title,
-            content: item.content,
-            sort_order: item.sort_order
-          })));
-        if (itemError) throw itemError;
+        for (const item of syntheticPrivateItems(account.handle)) {
+          await execute(
+            `insert into public.t08_private_items (account_id, title, content, sort_order)
+             values ($1, $2, $3, $4)`,
+            [account.id, item.title, item.content, item.sort_order]
+          );
+        }
       }
     } catch (error) {
       if (createdAccountId) {
-        await getDb().from('t08_private_items').delete().eq('account_id', createdAccountId);
-        await getDb().from('t08_passkeys').delete().eq('account_id', createdAccountId);
-        await getDb().from('t08_accounts').delete().eq('id', createdAccountId);
+        await execute('delete from public.t08_private_items where account_id = $1', [createdAccountId]);
+        await execute('delete from public.t08_passkeys where account_id = $1', [createdAccountId]);
+        await execute('delete from public.t08_accounts where id = $1', [createdAccountId]);
       }
       if (error?.code === '23505') {
         clearFlowCookie(res);
