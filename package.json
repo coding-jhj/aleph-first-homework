@@ -1,0 +1,20 @@
+{
+  "name": "aleph-first-homework-t08",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/check-t08.mjs",
+    "syntax": "node scripts/check-syntax.mjs"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "13.3.3",
+    "@supabase/supabase-js": "2.116.0"
+  },
+  "devDependencies": {
+    "@babel/parser": "8.0.4"
+  }
+}

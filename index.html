@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jeong Hwan Ju | AI Engineer Portfolio</title>
+  <title>JHJ | Sample AI Engineer Portfolio</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -151,6 +151,335 @@
       const [showLeaseEvidence, setShowLeaseEvidence] = useState(true);
       const [techFilter, setTechFilter] = useState('all');
       const [selectedTechIndex, setSelectedTechIndex] = useState(0);
+
+      const [secureHandle, setSecureHandle] = useState('sample-a');
+      const [secureNickname, setSecureNickname] = useState('주 사용 기기');
+      const [secureAddNickname, setSecureAddNickname] = useState('보조 기기');
+      const [secureState, setSecureState] = useState({
+        status: 'loading',
+        account: null,
+        items: [],
+        passkeys: [],
+        events: [],
+        message: null
+      });
+      const [isSecureBusy, setIsSecureBusy] = useState(false);
+
+      const secureApi = async (path, options = {}) => {
+        const response = await fetch(path, {
+          ...options,
+          credentials: 'include',
+          headers: {
+            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+            ...(options.headers || {})
+          }
+        });
+        const raw = await response.text();
+        let data = {};
+        try {
+          data = raw ? JSON.parse(raw) : {};
+        } catch {
+          data = { error: raw || '서버 응답을 읽을 수 없습니다.' };
+        }
+        if (!response.ok) {
+          const error = new Error(data.error || '요청을 처리하지 못했습니다.');
+          error.status = response.status;
+          error.payload = data;
+          throw error;
+        }
+        return data;
+      };
+
+      const base64UrlToBytes = (value) => {
+        const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+        const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      };
+
+      const bytesToBase64Url = (value) => {
+        const bytes = new Uint8Array(value);
+        let binary = '';
+        for (let index = 0; index < bytes.length; index += 1) {
+          binary += String.fromCharCode(bytes[index]);
+        }
+        return btoa(binary)
+          .replace(/\+/g, '-')
+          .replace(/\//g, '_')
+          .replace(/=+$/g, '');
+      };
+
+      const toCreationOptions = (options) => ({
+        ...options,
+        challenge: base64UrlToBytes(options.challenge),
+        user: {
+          ...options.user,
+          id: base64UrlToBytes(options.user.id)
+        },
+        excludeCredentials: (options.excludeCredentials || []).map((credential) => ({
+          ...credential,
+          id: base64UrlToBytes(credential.id)
+        }))
+      });
+
+      const toRequestOptions = (options) => ({
+        ...options,
+        challenge: base64UrlToBytes(options.challenge),
+        allowCredentials: options.allowCredentials
+          ? options.allowCredentials.map((credential) => ({
+              ...credential,
+              id: base64UrlToBytes(credential.id)
+            }))
+          : undefined
+      });
+
+      const serializeRegistrationCredential = (credential) => ({
+        id: credential.id,
+        rawId: bytesToBase64Url(credential.rawId),
+        response: {
+          clientDataJSON: bytesToBase64Url(credential.response.clientDataJSON),
+          attestationObject: bytesToBase64Url(credential.response.attestationObject),
+          transports: typeof credential.response.getTransports === 'function'
+            ? credential.response.getTransports()
+            : undefined
+        },
+        type: credential.type,
+        clientExtensionResults: typeof credential.getClientExtensionResults === 'function'
+          ? credential.getClientExtensionResults()
+          : {},
+        authenticatorAttachment: credential.authenticatorAttachment || undefined
+      });
+
+      const serializeAuthenticationCredential = (credential) => ({
+        id: credential.id,
+        rawId: bytesToBase64Url(credential.rawId),
+        response: {
+          clientDataJSON: bytesToBase64Url(credential.response.clientDataJSON),
+          authenticatorData: bytesToBase64Url(credential.response.authenticatorData),
+          signature: bytesToBase64Url(credential.response.signature),
+          userHandle: credential.response.userHandle
+            ? bytesToBase64Url(credential.response.userHandle)
+            : null
+        },
+        type: credential.type,
+        clientExtensionResults: typeof credential.getClientExtensionResults === 'function'
+          ? credential.getClientExtensionResults()
+          : {},
+        authenticatorAttachment: credential.authenticatorAttachment || undefined
+      });
+
+      const secureErrorText = (error, fallback) => {
+        if (error && error.name === 'NotAllowedError') {
+          return '브라우저 또는 사용자가 패스키 요청을 취소했습니다. 저장된 내용은 변경되지 않았습니다.';
+        }
+        if (error && error.name === 'SecurityError') {
+          return 'HTTPS 또는 localhost 보안 문맥에서만 패스키를 사용할 수 있습니다.';
+        }
+        return error && error.message ? error.message : fallback;
+      };
+
+      const lockedSecureState = (message = null) => ({
+        status: 'locked',
+        account: null,
+        items: [],
+        passkeys: [],
+        events: [],
+        message
+      });
+
+      const refreshSecureWorkspace = async () => {
+        try {
+          const session = await secureApi('/api/session');
+          const [workspace, passkeys, events] = await Promise.all([
+            secureApi('/api/private/items'),
+            secureApi('/api/passkeys'),
+            secureApi('/api/security/events')
+          ]);
+          setSecureState({
+            status: 'authenticated',
+            account: session.account,
+            items: workspace.items || [],
+            passkeys: passkeys.passkeys || [],
+            events: events.events || [],
+            message: null
+          });
+        } catch (error) {
+          if (error.status === 401) {
+            setSecureState(lockedSecureState());
+          } else {
+            setSecureState(lockedSecureState(
+              secureErrorText(error, '보안 API가 아직 연결되지 않았습니다. 배포 환경변수를 확인해 주세요.')
+            ));
+          }
+        }
+      };
+
+      const handleCancelRegistration = async (showMessage = true) => {
+        try {
+          await secureApi('/api/passkeys/register-cancel', {
+            method: 'POST',
+            body: '{}'
+          });
+        } catch {
+          // A missing or expired challenge is already equivalent to cancellation.
+        }
+        if (showMessage) {
+          setSecureState(lockedSecureState('등록을 취소했습니다. 계정이나 패스키는 저장되지 않았습니다.'));
+        }
+      };
+
+      const beginPasskeyRegistration = async (adding = false) => {
+        const handle = secureHandle.trim().toLowerCase();
+        const nickname = (adding ? secureAddNickname : secureNickname).trim();
+
+        if (!adding && !/^[a-z0-9][a-z0-9-_]{2,31}$/.test(handle)) {
+          setSecureState(lockedSecureState('공개 별칭은 영문 소문자·숫자·하이픈·밑줄 3~32자로 입력해 주세요.'));
+          return;
+        }
+        if (!nickname || nickname.length > 80) {
+          setSecureState(lockedSecureState('패스키 이름을 1~80자로 입력해 주세요.'));
+          return;
+        }
+
+        setIsSecureBusy(true);
+        setSecureState((current) => ({ ...current, status: 'busy', message: null }));
+        try {
+          const optionsResponse = await secureApi('/api/passkeys/register-options', {
+            method: 'POST',
+            body: JSON.stringify({
+              handle: adding ? undefined : handle,
+              displayName: adding ? undefined : handle,
+              nickname
+            })
+          });
+          const credential = await navigator.credentials.create({
+            publicKey: toCreationOptions(optionsResponse.options)
+          });
+          if (!credential) {
+            throw new Error('패스키 생성이 취소되었습니다.');
+          }
+          const verifyResponse = await secureApi('/api/passkeys/register-verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              response: serializeRegistrationCredential(credential),
+              nickname
+            })
+          });
+          await refreshSecureWorkspace();
+          setSecureState((current) => ({
+            ...current,
+            message: verifyResponse.message || '패스키가 등록되었습니다.'
+          }));
+        } catch (error) {
+          await handleCancelRegistration(false);
+          setSecureState(lockedSecureState(
+            secureErrorText(error, '패스키 등록에 실패했습니다. 다시 시도해 주세요.')
+          ));
+        } finally {
+          setIsSecureBusy(false);
+        }
+      };
+
+      const beginPasskeyLogin = async () => {
+        const handle = secureHandle.trim().toLowerCase();
+        if (!/^[a-z0-9][a-z0-9-_]{2,31}$/.test(handle)) {
+          setSecureState(lockedSecureState('로그인할 공개 별칭을 입력해 주세요.'));
+          return;
+        }
+
+        setIsSecureBusy(true);
+        setSecureState((current) => ({ ...current, status: 'busy', message: null }));
+        try {
+          const optionsResponse = await secureApi('/api/passkeys/auth-options', {
+            method: 'POST',
+            body: JSON.stringify({ handle })
+          });
+          const credential = await navigator.credentials.get({
+            publicKey: toRequestOptions(optionsResponse.options)
+          });
+          if (!credential) {
+            throw new Error('패스키 로그인이 취소되었습니다.');
+          }
+          const verifyResponse = await secureApi('/api/passkeys/auth-verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              response: serializeAuthenticationCredential(credential)
+            })
+          });
+          await refreshSecureWorkspace();
+          setSecureState((current) => ({
+            ...current,
+            message: verifyResponse.message || '패스키 인증이 완료되었습니다.'
+          }));
+        } catch (error) {
+          setSecureState(lockedSecureState(
+            secureErrorText(error, '패스키 로그인에 실패했습니다. 서명과 challenge를 확인해 주세요.')
+          ));
+        } finally {
+          setIsSecureBusy(false);
+        }
+      };
+
+      const handleSecureLogout = async () => {
+        setIsSecureBusy(true);
+        try {
+          await secureApi('/api/session/logout', { method: 'POST', body: '{}' });
+          setSecureState(lockedSecureState('로그아웃되었습니다. private 자료는 다시 인증하기 전까지 표시되지 않습니다.'));
+        } catch (error) {
+          setSecureState((current) => ({
+            ...current,
+            message: secureErrorText(error, '로그아웃에 실패했습니다.')
+          }));
+        } finally {
+          setIsSecureBusy(false);
+        }
+      };
+
+      const handleDeletePasskey = async (passkeyId) => {
+        if (!window.confirm('이 패스키를 삭제할까요? 삭제 후에는 해당 패스키를 재사용할 수 없습니다.')) {
+          return;
+        }
+        setIsSecureBusy(true);
+        try {
+          const result = await secureApi('/api/passkeys/' + encodeURIComponent(passkeyId), {
+            method: 'DELETE'
+          });
+          if (result.sessionRevoked) {
+            setSecureState(lockedSecureState('마지막 패스키가 삭제되어 세션도 종료되었습니다.'));
+          } else {
+            await refreshSecureWorkspace();
+            setSecureState((current) => ({
+              ...current,
+              message: '패스키가 삭제되었습니다. 남은 패스키는 계속 사용할 수 있습니다.'
+            }));
+          }
+        } catch (error) {
+          setSecureState((current) => ({
+            ...current,
+            message: secureErrorText(error, '패스키 삭제에 실패했습니다.')
+          }));
+        } finally {
+          setIsSecureBusy(false);
+        }
+      };
+
+      const formatSecureDate = (value) => {
+        if (!value) return '날짜 미상';
+        try {
+          return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(new Date(value));
+        } catch {
+          return '날짜 미상';
+        }
+      };
+
+      useEffect(() => {
+        refreshSecureWorkspace();
+      }, []);
+
 
       const scrollTo = (id) => {
         setMobileMenuOpen(false);
@@ -355,10 +684,10 @@
                   </div>
                   <div className="flex flex-col">
                     <span className="font-extrabold text-slate-900 text-lg tracking-tight leading-none">
-                      정환주
+                      JHJ
                     </span>
                     <span className="text-xs font-semibold text-blue-600 leading-tight">
-                      Jeong Hwan Ju | AI Engineer
+                      JHJ | AI Engineer
                     </span>
                   </div>
                 </div>
@@ -369,11 +698,12 @@
                   <button onClick={() => scrollTo('more-projects')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">더 많은 프로젝트</button>
                   <button onClick={() => scrollTo('journey')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">여정</button>
                   <button onClick={() => scrollTo('tech-stack')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">기술 스택</button>
+                  <button onClick={() => scrollTo('secure-space')} className="hover:text-blue-600 transition-colors py-2 px-3 rounded-lg hover:bg-slate-100">보안 공간</button>
                 </nav>
 
                 <div className="hidden md:flex items-center">
                   <a 
-                    href="mailto:ghkswnwjd@gmail.com" 
+                    href="mailto:hello@example.com" 
                     className="inline-flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <MailIcon className="w-4 h-4 mr-1.5" />
@@ -396,7 +726,8 @@
                 <button onClick={() => scrollTo('more-projects')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">더 많은 프로젝트</button>
                 <button onClick={() => scrollTo('journey')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">여정</button>
                 <button onClick={() => scrollTo('tech-stack')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">기술 스택</button>
-                <a href="mailto:ghkswnwjd@gmail.com" className="block w-full text-center mt-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg">연락하기</a>
+                <button onClick={() => scrollTo('secure-space')} className="block w-full text-left px-3 py-2 rounded-md hover:bg-slate-100">보안 공간</button>
+                <a href="mailto:hello@example.com" className="block w-full text-center mt-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg">연락하기</a>
               </div>
             )}
           </header>
@@ -412,7 +743,7 @@
                   <div className="lg:col-span-7 space-y-6">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 border border-blue-300 text-blue-900 text-xs sm:text-sm font-extrabold shadow-sm">
                       <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
-                      AI System & Infrastructure Engineer — 정환주 (Jeong Hwan Ju)
+                      AI System & Infrastructure Engineer — JHJ (Sample AI Engineer)
                     </div>
 
                     <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -536,6 +867,299 @@
               </div>
             </section>
 
+
+            <section id="secure-space" className="scroll-mt-20" data-testid="secure-space">
+              <div className="rounded-3xl bg-slate-950 p-6 sm:p-10 shadow-xl shadow-slate-900/10 overflow-hidden relative">
+                <div className="absolute -top-24 -right-16 w-80 h-80 rounded-full bg-blue-500/20 blur-3xl pointer-events-none"></div>
+                <div className="relative z-10 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    <div className="lg:col-span-7 space-y-4">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200 text-xs font-black tracking-widest">
+                        <span className="w-2 h-2 rounded-full bg-blue-300 animate-pulse"></span>
+                        PUBLIC / PRIVATE BOUNDARY
+                      </div>
+                      <h2 className="text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+                        공개 포트폴리오와<br className="sm:hidden" /> 패스키 전용 보안 공간
+                      </h2>
+                      <p className="text-sm sm:text-base text-slate-300 font-semibold leading-relaxed max-w-2xl">
+                        위쪽의 포트폴리오는 누구나 읽을 수 있습니다. 아래 private 자료는 서버가 WebAuthn 서명을 검증한 뒤에만 응답하며,
+                        초기 HTML과 로그아웃 상태에는 실제 비공개 내용이 포함되지 않습니다.
+                      </p>
+                    </div>
+                    <div className="lg:col-span-5 grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+                        <span className="block text-[10px] text-emerald-300 font-black tracking-widest">PUBLIC</span>
+                        <span className="block text-sm text-white font-extrabold mt-2">소개 · 프로젝트 · 기술</span>
+                        <span className="block text-xs text-slate-400 font-semibold mt-1">인증 없이 열람</span>
+                      </div>
+                      <div className="rounded-2xl bg-blue-500/15 border border-blue-300/30 p-4">
+                        <span className="block text-[10px] text-blue-200 font-black tracking-widest">PRIVATE</span>
+                        <span className="block text-sm text-white font-extrabold mt-2">작업 메모 · 기록</span>
+                        <span className="block text-xs text-slate-400 font-semibold mt-1">패스키 인증 후 응답</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {secureState.message && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-amber-300/30 bg-amber-300/10 p-4 text-sm text-amber-100 font-semibold" role="status" data-testid="secure-message">
+                      <AlertTriangleIcon className="w-5 h-5 shrink-0 text-amber-300" />
+                      <span>{secureState.message}</span>
+                    </div>
+                  )}
+
+                  {secureState.status === 'loading' && (
+                    <div className="rounded-3xl bg-white/10 border border-white/10 p-8 text-center text-slate-200 font-bold" data-testid="secure-loading">
+                      private 공간의 세션 상태를 확인하고 있습니다…
+                    </div>
+                  )}
+
+                  {secureState.status !== 'authenticated' && secureState.status !== 'loading' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" data-testid="secure-locked">
+                      <form
+                        className="rounded-3xl bg-white p-6 sm:p-7 space-y-5"
+                        onSubmit={(event) => { event.preventDefault(); beginPasskeyRegistration(false); }}
+                      >
+                        <div>
+                          <span className="text-xs font-black text-blue-700 uppercase tracking-widest">First access</span>
+                          <h3 className="text-xl font-extrabold text-slate-900 mt-1">새 보안 공간 만들기</h3>
+                          <p className="text-xs text-slate-600 font-semibold mt-2 leading-relaxed">
+                            제출한 별칭은 계정 식별자입니다. 비밀번호 입력 없이 기기 또는 보안 키에 패스키를 저장합니다.
+                          </p>
+                        </div>
+                        <label className="block">
+                          <span className="block text-xs font-extrabold text-slate-700 mb-1.5">공개 별칭</span>
+                          <input
+                            value={secureHandle}
+                            onChange={(event) => setSecureHandle(event.target.value)}
+                            placeholder="sample-a"
+                            autoComplete="username webauthn"
+                            pattern="[a-z0-9][a-z0-9-_]{2,31}"
+                            required
+                            className="w-full rounded-xl border-2 border-slate-200 px-3.5 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-blue-500"
+                            data-testid="secure-handle"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="block text-xs font-extrabold text-slate-700 mb-1.5">패스키 이름</span>
+                          <input
+                            value={secureNickname}
+                            onChange={(event) => setSecureNickname(event.target.value)}
+                            placeholder="주 사용 기기"
+                            required
+                            className="w-full rounded-xl border-2 border-slate-200 px-3.5 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-blue-500"
+                            data-testid="secure-registration-nickname"
+                          />
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <button
+                            type="submit"
+                            disabled={isSecureBusy}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 text-sm text-white font-extrabold transition-colors"
+                            data-testid="secure-register"
+                          >
+                            <UserCheckIcon className="w-4 h-4" />
+                            {isSecureBusy ? '패스키 요청 중…' : '패스키로 공간 만들기'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCancelRegistration(true)}
+                            disabled={isSecureBusy}
+                            className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-sm text-slate-600 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50 font-extrabold transition-colors"
+                            data-testid="secure-register-cancel"
+                          >
+                            등록 취소
+                          </button>
+                        </div>
+                      </form>
+
+                      <form
+                        className="rounded-3xl bg-slate-900 border border-white/10 p-6 sm:p-7 space-y-5"
+                        onSubmit={(event) => { event.preventDefault(); beginPasskeyLogin(); }}
+                      >
+                        <div>
+                          <span className="text-xs font-black text-emerald-300 uppercase tracking-widest">Returning user</span>
+                          <h3 className="text-xl font-extrabold text-white mt-1">패스키로 로그인</h3>
+                          <p className="text-xs text-slate-400 font-semibold mt-2 leading-relaxed">
+                            별칭으로 공개 계정을 찾은 뒤 새 challenge와 기기 서명을 검증합니다. 실패하면 private 응답은 생성되지 않습니다.
+                          </p>
+                        </div>
+                        <label className="block">
+                          <span className="block text-xs font-extrabold text-slate-300 mb-1.5">공개 별칭</span>
+                          <input
+                            value={secureHandle}
+                            onChange={(event) => setSecureHandle(event.target.value)}
+                            placeholder="sample-a"
+                            autoComplete="username webauthn"
+                            required
+                            className="w-full rounded-xl border-2 border-white/10 bg-white/10 px-3.5 py-2.5 text-sm font-bold text-white placeholder:text-slate-500 outline-none focus:border-emerald-400"
+                            data-testid="secure-login-handle"
+                          />
+                        </label>
+                        <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-xs text-slate-400 font-semibold leading-relaxed">
+                          패스키는 서버로 전송되지 않습니다. 서버에는 검증에 필요한 공개 키와 인증기 카운터만 저장됩니다.
+                        </div>
+                        <button
+                          type="submit"
+                          disabled={isSecureBusy}
+                          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 text-sm text-slate-950 font-extrabold transition-colors"
+                          data-testid="secure-login"
+                        >
+                          <CheckCircleIcon className="w-4 h-4" />
+                          {isSecureBusy ? '서명 검증 중…' : '패스키로 잠금 해제'}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+
+                  {secureState.status === 'authenticated' && (
+                    <div className="space-y-6" data-testid="private-workspace">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl bg-white p-5 sm:p-6">
+                        <div>
+                          <span className="text-xs font-black text-blue-700 uppercase tracking-widest">Authenticated private workspace</span>
+                          <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1">
+                            {secureState.account?.display_name || secureState.account?.handle}
+                          </h3>
+                          <p className="text-xs text-slate-600 font-semibold mt-1">
+                            공개 별칭: {secureState.account?.handle} · 현재 계정의 자료만 반환됨
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSecureLogout}
+                          disabled={isSecureBusy}
+                          className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-200 px-4 py-2.5 text-sm font-extrabold text-slate-700 hover:border-red-300 hover:text-red-700 disabled:opacity-50 transition-colors"
+                          data-testid="secure-logout"
+                        >
+                          로그아웃
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                        <div className="lg:col-span-8 rounded-3xl bg-white p-6 sm:p-7">
+                          <div className="flex items-center justify-between gap-3 mb-5">
+                            <div>
+                              <span className="text-xs font-black text-blue-700 uppercase tracking-widest">Private records</span>
+                              <h3 className="text-xl font-extrabold text-slate-900 mt-1">비공개 작업 기록</h3>
+                            </div>
+                            <span className="rounded-full bg-blue-50 border border-blue-200 text-blue-800 px-3 py-1 text-xs font-black">
+                              {secureState.items.length} items
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            {secureState.items.map((item) => (
+                              <article key={item.id} className="rounded-2xl bg-slate-50 border border-slate-200 p-4 min-h-36" data-testid="private-item">
+                                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center mb-4">
+                                  <FileTextIcon className="w-4 h-4" />
+                                </div>
+                                <h4 className="text-sm font-extrabold text-slate-900">{item.title}</h4>
+                                <p className="text-xs text-slate-600 font-semibold leading-relaxed mt-2">{item.content}</p>
+                                <span className="block text-[10px] text-slate-400 font-bold mt-3">{formatSecureDate(item.created_at)}</span>
+                              </article>
+                            ))}
+                            {secureState.items.length === 0 && (
+                              <div className="sm:col-span-3 rounded-2xl border-2 border-dashed border-slate-200 p-6 text-center text-sm text-slate-500 font-bold" data-testid="private-empty">
+                                현재 비공개 기록이 없습니다. 인증된 계정에만 이 상태가 표시됩니다.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="lg:col-span-4 rounded-3xl bg-slate-900 p-6 sm:p-7 text-white">
+                          <div className="flex items-center justify-between gap-3 mb-5">
+                            <div>
+                              <span className="text-xs font-black text-emerald-300 uppercase tracking-widest">Passkey list</span>
+                              <h3 className="text-xl font-extrabold mt-1">내 인증 기기</h3>
+                            </div>
+                            <span className="rounded-full bg-white/10 border border-white/10 text-slate-200 px-3 py-1 text-xs font-black">
+                              {secureState.passkeys.length}
+                            </span>
+                          </div>
+                          <div className="space-y-3">
+                            {secureState.passkeys.map((passkey) => (
+                              <div key={passkey.id} className="rounded-2xl bg-white/10 border border-white/10 p-4" data-testid="passkey-row">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <h4 className="text-sm font-extrabold text-white">{passkey.nickname}</h4>
+                                    <p className="text-[11px] text-slate-400 font-semibold mt-1">{formatSecureDate(passkey.created_at)}</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeletePasskey(passkey.id)}
+                                    disabled={isSecureBusy}
+                                    className="text-[11px] text-red-200 hover:text-white disabled:opacity-50 font-extrabold"
+                                    data-testid="delete-passkey"
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                            {secureState.passkeys.length === 0 && (
+                              <div className="rounded-2xl border border-dashed border-white/20 p-4 text-xs text-slate-400 font-semibold leading-relaxed" data-testid="passkey-empty">
+                                등록된 패스키가 0개입니다. 다시 로그인하려면 새 패스키를 등록해야 합니다.
+                              </div>
+                            )}
+                          </div>
+                          <div className="border-t border-white/10 mt-5 pt-5 space-y-3">
+                            <label className="block">
+                              <span className="block text-xs text-slate-300 font-extrabold mb-1.5">새 패스키 이름</span>
+                              <input
+                                value={secureAddNickname}
+                                onChange={(event) => setSecureAddNickname(event.target.value)}
+                                placeholder="보조 기기"
+                                className="w-full rounded-xl border border-white/10 bg-white/10 px-3 py-2.5 text-sm font-bold text-white placeholder:text-slate-500 outline-none focus:border-emerald-400"
+                                data-testid="secure-add-nickname"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => beginPasskeyRegistration(true)}
+                              disabled={isSecureBusy}
+                              className="w-full rounded-xl bg-white text-slate-900 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-2.5 text-xs font-extrabold transition-colors"
+                              data-testid="secure-add-passkey"
+                            >
+                              다른 기기 패스키 추가
+                            </button>
+                          </div>
+                        </div>
+                        <div className="lg:col-span-12 rounded-3xl bg-white/10 border border-white/10 p-6 sm:p-7" data-testid="security-events">
+                          <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                            <div>
+                              <span className="text-xs font-black text-amber-200 uppercase tracking-widest">Security evidence</span>
+                              <h3 className="text-xl font-extrabold text-white mt-1">인증 기록</h3>
+                            </div>
+                            <span className="text-xs text-slate-400 font-semibold">최근 이벤트 · challenge와 credential은 fingerprint만 표시</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {secureState.events.slice(0, 6).map((event, index) => (
+                              <div key={event.created_at + '-' + index} className="rounded-2xl bg-slate-950/50 border border-white/10 p-4">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={"text-[10px] font-black px-2 py-1 rounded-full " + (event.success ? 'bg-emerald-300/15 text-emerald-200' : 'bg-red-300/15 text-red-200')}>
+                                    {event.success ? 'SUCCESS' : 'DENIED'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 font-bold">{formatSecureDate(event.created_at)}</span>
+                                </div>
+                                <p className="text-xs text-white font-extrabold mt-3">{event.event_type}</p>
+                                <p className="text-[11px] text-slate-400 font-semibold mt-1">사유: {event.reason_code}</p>
+                                <p className="text-[10px] text-slate-500 font-mono mt-2 break-all">
+                                  challenge: {event.challenge_fingerprint || 'none'}
+                                </p>
+                              </div>
+                            ))}
+                            {secureState.events.length === 0 && (
+                              <div className="sm:col-span-2 lg:col-span-3 rounded-2xl border border-dashed border-white/20 p-5 text-center text-xs text-slate-400 font-semibold">
+                                아직 기록된 인증 이벤트가 없습니다.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+
             {}
             <section id="about" className="scroll-mt-20">
               <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-10 shadow-sm space-y-10">
@@ -549,7 +1173,7 @@
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                   <div className="lg:col-span-7 space-y-4 text-slate-800 text-base sm:text-lg leading-relaxed font-semibold">
                     <p className="bg-slate-50 p-4 rounded-2xl border-l-4 border-blue-600 shadow-sm">
-                      안녕하세요, AI 엔지니어 <strong className="text-blue-700 font-extrabold">정환주 (Jeong Hwan Ju)</strong>입니다. Python과 Git 기초에서 시작하여 데이터 분석, 머신러닝, 딥러닝, NLP를 깊이 있게 익혔으며, RAG, Agent, 온디바이스 AI, 모델 정량 평가 및 GPU 서빙 인프라 영역으로 지속 확장하고 있습니다.
+                      안녕하세요, AI 엔지니어 <strong className="text-blue-700 font-extrabold">JHJ (Sample AI Engineer)</strong>입니다. Python과 Git 기초에서 시작하여 데이터 분석, 머신러닝, 딥러닝, NLP를 깊이 있게 익혔으며, RAG, Agent, 온디바이스 AI, 모델 정량 평가 및 GPU 서빙 인프라 영역으로 지속 확장하고 있습니다.
                     </p>
                     <p className="text-slate-800">
                       학습한 원리와 알고리즘을 단순한 예제 코드에 담아두지 않고, 실제 작동하는 서비스, 서빙 파이프라인, 모바일 온디바이스 시스템, 개발 도구로 끝까지 완성해내는 것에 강력한 의지를 가지고 있습니다.
@@ -1468,12 +2092,12 @@
               <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-blue-500/20">JHJ</div>
-                  <span className="font-extrabold text-slate-900 text-lg">정환주 <span className="text-xs font-bold text-blue-600">Jeong Hwan Ju | AI Engineer</span></span>
+                  <span className="font-extrabold text-slate-900 text-lg">JHJ <span className="text-xs font-bold text-blue-600">Sample AI Engineer</span></span>
                 </div>
                 <p className="text-xs text-slate-800 font-bold">문제를 정의하고, 엔지니어링으로 해결하는 AI 개발자</p>
                 <div className="flex items-center space-x-4 text-xs font-bold text-slate-800">
-                  <a href="mailto:ghkswnwjd@gmail.com" className="hover:text-blue-600 transition-colors flex items-center gap-1">
-                    <MailIcon className="w-3.5 h-3.5" /> ghkswnwjd@gmail.com
+                  <a href="mailto:hello@example.com" className="hover:text-blue-600 transition-colors flex items-center gap-1">
+                    <MailIcon className="w-3.5 h-3.5" /> hello@example.com
                   </a>
                   <a href="https://github.com/coding-jhj" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition-colors flex items-center gap-1">
                     <GithubIcon className="w-3.5 h-3.5" /> GitHub.com/coding-jhj
@@ -1481,7 +2105,7 @@
                 </div>
               </div>
               <div className="border-t border-slate-200 pt-6 text-center text-xs text-slate-600 font-semibold">
-                © 2026 Jeong Hwan Ju. All rights reserved.
+                © 2026 JHJ. All rights reserved.
               </div>
             </div>
           </footer>
