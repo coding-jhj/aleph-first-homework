@@ -1,22 +1,38 @@
-import { createClient } from '@supabase/supabase-js';
+import { neon } from '@neondatabase/serverless';
 
 let cachedClient;
 
 export function getDb() {
   if (cachedClient) return cachedClient;
 
-  const url = process.env.SUPABASE_URL;
-  const secretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !secretKey) {
-    throw new Error('missing_supabase_server_environment');
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('missing_database_url');
   }
 
-  cachedClient = createClient(url, secretKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false
-    }
-  });
+  cachedClient = neon(connectionString);
   return cachedClient;
+}
+
+export async function query(text, params = []) {
+  return getDb().query(text, params);
+}
+
+export async function queryOne(text, params = []) {
+  const rows = await query(text, params);
+  if (rows.length === 0) return null;
+  if (rows.length > 1) {
+    const error = new Error('unexpected_multiple_rows');
+    error.code = 'unexpected_cardinality';
+    throw error;
+  }
+  return rows[0];
+}
+
+export async function execute(text, params = []) {
+  await query(text, params);
+}
+
+export function jsonParam(value) {
+  return JSON.stringify(value ?? {});
 }

@@ -1,5 +1,5 @@
 import { getConfig } from '../_lib/config.js';
-import { getDb } from '../_lib/db.js';
+import { query } from '../_lib/db.js';
 import { getAccountByHandle, getAccountById } from '../_lib/accounts.js';
 import { newWebAuthnUserId } from '../_lib/crypto.js';
 import { storeChallenge } from '../_lib/challenges.js';
@@ -36,13 +36,13 @@ export default async function handler(req, res) {
         sendError(res, 401, '세션의 계정을 찾을 수 없습니다.', 'account_not_found');
         return;
       }
-      const { data, error } = await getDb()
-        .from('t08_passkeys')
-        .select('credential_id,transports')
-        .eq('account_id', account.id)
-        .order('created_at', { ascending: true });
-      if (error) throw error;
-      existingPasskeys = data || [];
+      existingPasskeys = await query(
+        `select credential_id, transports
+         from public.t08_passkeys
+         where account_id = $1
+         order by created_at asc`,
+        [account.id]
+      );
       metadata = {
         mode: 'add',
         nickname,
