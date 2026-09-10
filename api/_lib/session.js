@@ -1,5 +1,5 @@
 import { getConfig } from './config.js';
-import { execute, queryOne } from './db.js';
+import { fetchOne, updateRows, insertOne } from './db.js';
 import { newBase64UrlToken, sha256Hex } from './crypto.js';
 import { clearCookie, readCookie, setCookie } from './cookies.js';
 import { sendJson } from './http.js';
@@ -21,14 +21,15 @@ export async function findSession(req) {
   const rawToken = readCookie(req, SESSION_COOKIE);
   if (!rawToken) return null;
 
-  const session = await queryOne(
-    `select id, account_id, token_hash, expires_at, created_at
-     from public.t08_sessions
-     where token_hash = $1
-       and revoked_at is null
-       and expires_at > $2
-     limit 1`,
-    [sha256Hex(rawToken), new Date().toISOString()]
+  const now = new Date().toISOString();
+  const session = await fetchOne(
+    't08_sessions',
+    'id, account_id, token_hash, expires_at, created_at',
+    (query) => query
+      .eq('token_hash', sha256Hex(rawToken))
+      .is('revoked_at', null)
+      .gt('expires_at', now)
+      .limit(1)
   );
   return session ? { ...session, rawToken } : null;
 }
@@ -49,12 +50,11 @@ export async function createSession(res, accountId) {
   const config = getConfig();
   const rawToken = newBase64UrlToken(32);
   const expiresAt = new Date(Date.now() + config.sessionTtlSeconds * 1000).toISOString();
-  const data = await queryOne(
-    `insert into public.t08_sessions (account_id, token_hash, expires_at)
-     values ($1, $2, $3)
-     returning id, account_id, expires_at`,
-    [accountId, sha256Hex(rawToken), expiresAt]
-  );
+  const data = await insertOne('t08_sessions', {
+    account_id: accountId,
+    token_hash: sha256Hex(rawToken),
+    expires_at: expiresAt
+  }, 'id, account_id, expires_at');
 
   setCookie(res, SESSION_COOKIE, rawToken, cookieOptions(config, config.sessionTtlSeconds));
   return data;
@@ -63,22 +63,18 @@ export async function createSession(res, accountId) {
 export async function revokeSession(req) {
   const rawToken = readCookie(req, SESSION_COOKIE);
   if (!rawToken) return;
-  await execute(
-    `update public.t08_sessions
-     set revoked_at = $1
-     where token_hash = $2
-       and revoked_at is null`,
-    [new Date().toISOString(), sha256Hex(rawToken)]
+  await updateRows(
+    't08_sessions',
+    { revoked_at: new Date().toISOString() },
+    (query) => query.eq('token_hash', sha256Hex(rawToken)).is('revoked_at', null)
   );
 }
 
 export async function revokeAllSessions(accountId) {
-  await execute(
-    `update public.t08_sessions
-     set revoked_at = $1
-     where account_id = $2
-       and revoked_at is null`,
-    [new Date().toISOString(), accountId]
+  await updateRows(
+    't08_sessions',
+    { revoked_at: new Date().toISOString() },
+    (query) => query.eq('account_id', accountId).is('revoked_at', null)
   );
 }
 

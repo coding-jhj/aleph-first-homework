@@ -1,5 +1,5 @@
 import { getConfig } from '../_lib/config.js';
-import { query } from '../_lib/db.js';
+import { fetchRows } from '../_lib/db.js';
 import { getAccountByHandle, getAccountById } from '../_lib/accounts.js';
 import { newWebAuthnUserId } from '../_lib/crypto.js';
 import { storeChallenge } from '../_lib/challenges.js';
@@ -36,12 +36,10 @@ export default async function handler(req, res) {
         sendError(res, 401, '세션의 계정을 찾을 수 없습니다.', 'account_not_found');
         return;
       }
-      existingPasskeys = await query(
-        `select credential_id, transports
-         from public.t08_passkeys
-         where account_id = $1
-         order by created_at asc`,
-        [account.id]
+      existingPasskeys = await fetchRows(
+        't08_passkeys',
+        'credential_id, transports',
+        (query) => query.eq('account_id', account.id).order('created_at', { ascending: true })
       );
       metadata = {
         mode: 'add',

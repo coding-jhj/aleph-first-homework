@@ -1,6 +1,6 @@
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import { getConfig } from '../_lib/config.js';
-import { query } from '../_lib/db.js';
+import { fetchRows } from '../_lib/db.js';
 import { getAccountByHandle } from '../_lib/accounts.js';
 import { storeChallenge } from '../_lib/challenges.js';
 import { isHttpMethod, methodNotAllowed, readJson, sendError, sendJson, reportUnexpectedError, stringValue } from '../_lib/http.js';
@@ -27,12 +27,10 @@ export default async function handler(req, res) {
       return;
     }
 
-    const passkeys = await query(
-      `select credential_id, transports
-       from public.t08_passkeys
-       where account_id = $1
-       order by created_at asc`,
-      [account.id]
+    const passkeys = await fetchRows(
+      't08_passkeys',
+      'credential_id, transports',
+      (query) => query.eq('account_id', account.id).order('created_at', { ascending: true })
     );
     if (!passkeys || passkeys.length === 0) {
       sendError(res, 409, '이 계정에는 사용할 패스키가 없습니다. zero-passkey 상태입니다.', 'no_passkeys');

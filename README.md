@@ -14,7 +14,7 @@
   <p>
     <img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white" alt="Node.js 20 or newer">
     <img src="https://img.shields.io/badge/Auth-WebAuthn-5E5CE6" alt="WebAuthn">
-    <img src="https://img.shields.io/badge/Database-Neon%20PostgreSQL-00E599?logo=postgresql&logoColor=111111" alt="Neon PostgreSQL">
+    <img src="https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?logo=supabase&logoColor=white" alt="Supabase PostgreSQL">
     <img src="https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white" alt="Vercel">
   </p>
 </div>
@@ -26,7 +26,7 @@
 | 방문자 | 계정 소유자 | 서버 | 제출자 |
 | --- | --- | --- | --- |
 | 공개 포트폴리오를 바로 탐색 | passkey로 private 공간 진입 | 계정 범위와 서명을 검증 | 실제 허용·거부 동작을 증명 |
-| 로그인 전 private 내용은 보지 못함 | private records와 passkey 목록 확인 | Neon PostgreSQL에 필요한 정보만 저장 | 화면·API·Network 증거 캡처 |
+| 로그인 전 private 내용은 보지 못함 | private records와 passkey 목록 확인 | Supabase PostgreSQL에 필요한 정보만 저장 | 화면·API·Network 증거 캡처 |
 
 > **핵심 경험**
 >
@@ -38,7 +38,7 @@
 flowchart LR
     A["Public portfolio"] --> B["WebAuthn passkey"]
     B --> C["Vercel API"]
-    C --> D["Neon PostgreSQL"]
+    C --> D["Supabase PostgreSQL"]
     D --> E["Private workspace"]
 ~~~
 
@@ -65,8 +65,8 @@ flowchart LR
 - **Frontend**: 기존 단일 index.html portfolio + native Web Authentication API
 - **API**: Vercel Node.js Functions
 - **Authentication**: WebAuthn, @simplewebauthn/server
-- **Database**: Neon managed PostgreSQL
-- **Database client**: @neondatabase/serverless
+- **Database**: Supabase managed PostgreSQL
+- **Database client**: @supabase/supabase-js (server-only)
 - **Validation**: Node.js syntax check, T08 static check, npm audit
 
 ## 빠른 시작
@@ -74,7 +74,7 @@ flowchart LR
 ### 준비물
 
 - Node.js 20 이상
-- Neon PostgreSQL 프로젝트
+- Supabase 프로젝트 1개 (무료 플랜으로 충분)
 - Vercel 프로젝트
 - 실제 passkey를 사용할 HTTPS 도메인 또는 localhost 환경
 - 테스트용 authenticator: Windows Hello, 휴대전화 passkey, 또는 FIDO2 보안 키
@@ -97,28 +97,23 @@ npm.cmd run syntax
 npm.cmd run check
 ~~~
 
-### 2. Neon 연결 문자열 준비
+### 2. Supabase 프로젝트 키 준비
 
-Neon에서 PostgreSQL connection string을 복사합니다.
+Supabase Dashboard에서 다음 두 값을 확인합니다.
 
-~~~text
-postgresql://USER:PASSWORD@HOST/DATABASE?sslmode=require
-~~~
+| 값 | Dashboard 위치 | 저장할 환경변수 |
+| --- | --- | --- |
+| Project URL | Project Settings → API → Project URL | `SUPABASE_URL` |
+| 서버 전용 키 | Project Settings → API → Secret key 또는 legacy `service_role` key | `SUPABASE_SECRET_KEY` 또는 `SUPABASE_SERVICE_ROLE_KEY` |
 
-이 값은 비밀번호를 포함한 server-only secret입니다. GitHub, README, 브라우저 코드, 캡처 화면에 넣지 않습니다.
+서버 전용 키는 절대 GitHub, README, 브라우저 코드, 채팅, 캡처 화면에 넣지 않습니다. 이번 구현은 Supabase Data API를 서버 함수에서만 사용하므로 PostgreSQL connection string은 필요하지 않습니다.
 
 ### 3. 데이터베이스 초기화
 
-다음 migration 파일 전체를 Neon SQL Editor에 붙여 넣고 실행합니다.
+다음 migration 파일 전체를 Supabase Dashboard → SQL Editor에 붙여 넣고 실행합니다.
 
 ~~~text
 db/migrations/202609090001_t08_passkey_vault.sql
-~~~
-
-로컬에서 psql을 사용할 경우:
-
-~~~bash
-psql "$DATABASE_URL" -f db/migrations/202609090001_t08_passkey_vault.sql
 ~~~
 
 migration이 만드는 테이블:
@@ -160,7 +155,8 @@ Vercel Project Settings → Environment Variables에서 Preview와 Production �
 
 | 변수 | 값 |
 | --- | --- |
-| DATABASE_URL | Neon PostgreSQL connection string 전체 |
+| SUPABASE_URL | Supabase Project URL. 예: `https://YOUR_PROJECT_REF.supabase.co` |
+| SUPABASE_SECRET_KEY | Supabase Secret key. 없으면 `SUPABASE_SERVICE_ROLE_KEY` 사용 |
 | PUBLIC_ORIGIN | 실제 접속 origin. 예: https://aleph-first-homework.vercel.app |
 | WEBAUTHN_RP_ID | origin의 hostname. 예: aleph-first-homework.vercel.app |
 | WEBAUTHN_RP_NAME | AI Engineer Portfolio private space |
@@ -172,7 +168,7 @@ Vercel Project Settings → Environment Variables에서 Preview와 Production �
 - PUBLIC_ORIGIN은 https://를 포함합니다.
 - WEBAUTHN_RP_ID는 protocol과 path를 제외한 hostname만 입력합니다.
 - 실제 접속 hostname과 RP ID가 다르면 WebAuthn 검증이 실패합니다.
-- DATABASE_URL은 NEXT_PUBLIC_* 같은 브라우저 노출 변수로 만들지 않습니다.
+- SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY는 `NEXT_PUBLIC_*` 같은 브라우저 노출 변수로 만들지 않습니다.
 - Preview URL이 계속 바뀌면 고정된 Production 또는 테스트 도메인에서 passkey를 시험합니다.
 
 ### 5. 배포
@@ -182,6 +178,15 @@ Vercel Project Settings → Environment Variables에서 Preview와 Production �
 3. 상태가 Ready가 될 때까지 기다립니다.
 4. 배포 URL에서 public portfolio가 열리는지 확인합니다.
 5. 환경변수를 수정했다면 반드시 새 배포에서 반영됐는지 확인합니다.
+
+### 무료 플랜을 오래 쓰는 방법
+
+- 이 서비스의 사용자 계정은 Supabase 프로젝트가 아니라 `t08_accounts` 행으로 분리됩니다. 앱마다 프로젝트를 새로 만들지 말고 이 프로젝트 하나를 계속 사용합니다.
+- 무료 플랜은 활성 프로젝트 2개까지이므로 `production` 1개와 `실험용` 1개 정도로만 운영합니다. Preview마다 Supabase 프로젝트를 만들 필요가 없습니다.
+- 사용하지 않는 프로젝트는 일시정지할 수 있습니다. 일시정지된 프로젝트는 무료 프로젝트 할당량에 포함되지 않지만, 장기간 방치하지 말고 필요한 때 복구합니다.
+- 무료 프로젝트는 7일 동안 활동이 적으면 자동 일시정지될 수 있습니다. 과제 제출용 프로젝트는 가끔 실제 페이지를 열어 상태를 확인합니다.
+- Supabase Dashboard의 Billing/Usage에서 저장공간·대역폭·데이터베이스 사용량을 확인하고, 불필요한 테스트 계정과 이벤트를 정리합니다.
+- 무료 프로젝트 제한을 우회하기 위해 여러 계정을 만들거나 가짜 트래픽을 발생시키는 방식은 사용하지 않습니다. 추가 프로젝트가 정말 필요하면 별도 무료 조직을 만들 수 있지만, 이 과제에는 프로젝트 하나가 가장 단순합니다.
 
 ## 첫 사용자 여정
 
@@ -314,10 +319,10 @@ code: account_scope_mismatch
 
 ### 데이터베이스
 
-- Neon migration 실행
+- Supabase SQL Editor에서 migration 실행
 - 여섯 T08 테이블 생성
 - RLS 활성화 확인
-- server-only DATABASE_URL 설정
+- server-only Supabase URL/키 설정
 
 ### 서비스 경험
 
@@ -335,7 +340,7 @@ code: account_scope_mismatch
 
 ## 제한 사항
 
-- Neon 프로젝트 생성과 migration 실행은 배포 계정 권한이 필요합니다.
+- Supabase 프로젝트와 migration 실행은 배포 계정 권한이 필요합니다.
 - 실제 passkey 검증은 HTTPS와 실제 authenticator가 필요합니다.
 - Preview Protection이 켜져 있으면 Preview API 대신 접근 가능한 Production 또는 테스트 배포를 사용해야 합니다.
 - 마지막 passkey를 삭제하면 해당 계정의 세션도 종료됩니다.
@@ -343,8 +348,8 @@ code: account_scope_mismatch
 
 ## 공식 참고
 
-- [Neon serverless driver](https://neon.com/docs/serverless/serverless-driver)
-- [Neon과 Vercel 연결 방법](https://neon.com/docs/guides/vercel-connection-methods)
-- [Vercel PostgreSQL 안내](https://vercel.com/docs/postgres)
-- [Vercel Neon Marketplace](https://vercel.com/marketplace/neon)
-
+- [Supabase JavaScript client](https://supabase.com/docs/reference/javascript/introduction)
+- [Supabase API 보안·권한·RLS](https://supabase.com/docs/guides/api/securing-your-api)
+- [Supabase 무료 프로젝트·과금 FAQ](https://supabase.com/docs/guides/platform/billing-faq)
+- [Supabase 무료 프로젝트 일시정지](https://supabase.com/docs/guides/platform/free-project-pausing)
+- [Vercel 환경변수](https://vercel.com/docs/environment-variables)

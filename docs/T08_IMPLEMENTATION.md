@@ -1,15 +1,15 @@
 # T08 Passkey Private Portfolio 구현 문서
 
-상태: Neon PostgreSQL 전환, 코드·문서·정적 검증 구현 완료. 실제 WebAuthn 기기 테스트와 배포 증거는 Neon 데이터베이스와 Vercel 환경변수 입력 후 기록해야 한다.
+상태: Supabase PostgreSQL 전환, 코드·문서·정적 검증 구현 완료. 실제 WebAuthn 기기 테스트와 배포 증거는 Supabase migration과 Vercel 환경변수 입력 후 기록해야 한다.
 
 ## ① 무엇을 사용했나
 
 - 직접 구현: 공개 포트폴리오 안의 public/private 경계 UI, 등록·로그인·로그아웃·패스키 삭제 흐름, 계정 소유권 검사, HttpOnly 세션 쿠키, challenge 일회성 소비, 보안 이벤트 기록.
 - 브라우저 인증: 표준 Web Authentication API의 `navigator.credentials.create/get`.
 - 서버 검증 라이브러리: `@simplewebauthn/server` 13.3.3. 사용 API는 `generateRegistrationOptions`, `verifyRegistrationResponse`, `generateAuthenticationOptions`, `verifyAuthenticationResponse`다.
-- 데이터베이스: Neon이 제공하는 managed PostgreSQL.
-- 데이터베이스 클라이언트: `@neondatabase/serverless` 1.1.0. 모든 SQL은 서버 함수에서 parameterized query로 실행한다.
-- 실행 환경: Vercel Node.js Functions. 브라우저에는 `DATABASE_URL`이나 서버 secret을 전달하지 않는다.
+- 데이터베이스: Supabase managed PostgreSQL.
+- 데이터베이스 클라이언트: `@supabase/supabase-js` 2.116.0. 서버 함수가 Supabase Data API를 통해서만 테이블을 호출한다.
+- 실행 환경: Vercel Node.js Functions. 브라우저에는 Supabase 서버 키나 private 데이터베이스 자격증명을 전달하지 않는다.
 
 ## ② 왜 이렇게 사용했나
 
@@ -35,13 +35,13 @@ T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 cha
 | 다른 계정 URL 접근 | `api/private/accounts/[accountId]/items.js` | URL accountId가 session.account_id와 다르면 403과 authorization_denied 이벤트 |
 | 패스키 목록/삭제 | `api/passkeys/index.js`, `api/passkeys/[passkeyId].js` | 현재 계정의 nickname/date만 노출하고 소유자 일치 시에만 삭제 |
 | 성공·실패·replay 기록 | `api/_lib/events.js`, `api/security/events.js` | event type, success, reason code, challenge/credential fingerprint만 기록·조회 |
-| 스키마와 권한 | `db/migrations/202609090001_t08_passkey_vault.sql` | 모든 T08 테이블 RLS 활성화, `PUBLIC` 직접 테이블 권한 철회 |
+| 스키마와 권한 | `db/migrations/202609090001_t08_passkey_vault.sql` | 모든 T08 테이블 RLS 활성화, `anon`/`authenticated` 직접 테이블 권한 철회, `service_role`만 서버 접근 |
 
 인증 실패는 401, 계정 scope가 다른 private 요청은 403이다. registration challenge와 authentication challenge는 각각 5분 후 만료되고 `consumed_at`이 한 번 기록되면 다시 쓸 수 없다.
 
 ## ④ 거부 동작을 증명하는 기록
 
-아래 표는 제출 시 실제 브라우저·API 테스트 결과를 양쪽에 기록하는 형식이다. 현재 작업 환경에는 Neon 연결 문자열과 실제 passkey 기기가 없으므로, 빈 칸을 통과로 표시하지 않았다.
+아래 표는 제출 시 실제 브라우저·API 테스트 결과를 양쪽에 기록하는 형식이다. 현재 작업 환경에는 사용자의 Supabase 서버 키와 실제 passkey 기기가 없으므로, 빈 칸을 통과로 표시하지 않았다.
 
 | 검사 | 성공 쪽 | 거부 쪽 | 실제 증거 |
 | --- | --- | --- | --- |
@@ -58,8 +58,8 @@ T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 cha
 
 - GitHub 저장소의 기존 단일 `index.html` 전체 구조와 기존 public 섹션을 분석했다.
 - T08 requirement.txt의 C01~C53을 기능·보안·문서 항목으로 매핑했다.
-- native WebAuthn 브라우저 호출, Vercel API route, Neon PostgreSQL schema, 계정 scope 검사, 세션·challenge·event 기록을 구현했다.
-- 기존 데이터베이스 클라이언트 의존성을 제거하고 `@neondatabase/serverless` 기반 parameterized query로 교체했다.
+- native WebAuthn 브라우저 호출, Vercel API route, Supabase PostgreSQL schema, 계정 scope 검사, 세션·challenge·event 기록을 구현했다.
+- 기존 데이터베이스 클라이언트 의존성을 제거하고 `@supabase/supabase-js` server client 기반 데이터 접근 helper로 교체했다.
 - 정적 syntax/check 스크립트를 작성하고 실행 가능한 형태로 구성했다.
 
 ### 현재 반영한 제출자 결정
@@ -76,8 +76,8 @@ T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 cha
 
 ## ⑥ 아직 막혀 있는 구체적 한계
 
-1. Neon 데이터베이스를 만들고 migration을 원격 적용해야 한다.
-2. Vercel Preview/Production에 `PUBLIC_ORIGIN`, `WEBAUTHN_RP_ID`, `DATABASE_URL` 등을 입력하지 않으면 API는 의도적으로 private 자료를 반환하지 않는다.
+1. Supabase 프로젝트에 migration을 원격 적용해야 한다.
+2. Vercel Preview/Production에 `PUBLIC_ORIGIN`, `WEBAUTHN_RP_ID`, `SUPABASE_URL`, 서버 전용 Supabase 키 등을 입력하지 않으면 API는 의도적으로 private 자료를 반환하지 않는다.
 3. 실제 passkey 등록·로그인·삭제·replay 테스트는 HTTPS 브라우저와 플랫폼 authenticator 또는 보안 키가 필요하다. 일반 curl만으로는 유효한 WebAuthn 서명을 만들 수 없으므로 CI 정적 검사만으로 C19~C45 통과를 주장할 수 없다.
 4. 마지막 passkey를 삭제하면 계정의 등록 passkey가 0개가 되고 현재 세션도 종료된다. 복구 이메일이나 관리자 재등록 기능은 이 T08 범위에 넣지 않았다.
 

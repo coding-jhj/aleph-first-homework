@@ -15,12 +15,12 @@ const checks = [
   ['no password input', !/type\\s*=\\s*["']password["']/i.test(index)],
   ['synthetic public contact', !index.includes('ghkswnwjd@gmail.com') && !index.includes('정환주')],
   ['registration cancellation UI', index.includes('secure-register-cancel') && index.includes('/api/passkeys/register-cancel')],
-  ['private scope is server enforced', read('api/private/items.js').includes('where account_id = $1') && read('api/private/items.js').includes('session.account_id')],
+  ['private scope is server enforced', read('api/private/items.js').includes(".eq('account_id', session.account_id)") && read('api/private/items.js').includes('session.account_id')],
   ['cross-account rejection', read('api/private/accounts/[accountId]/items.js').includes('account_scope_mismatch')],
-  ['one-time challenge consumption', read('api/_lib/challenges.js').includes('consumed_at is null') && read('api/_lib/challenges.js').includes('expires_at > $1')],
+  ['one-time challenge consumption', read('api/_lib/challenges.js').includes(".is('consumed_at', null)") && read('api/_lib/challenges.js').includes(".gt('expires_at', now)")],
   ['session token hashing', read('api/_lib/session.js').includes('sha256Hex(rawToken)')],
-  ['Neon PostgreSQL connection', read('api/_lib/db.js').includes("@neondatabase/serverless") && read('api/_lib/db.js').includes('DATABASE_URL')],
-  ['no legacy database dependency', !Object.keys(packageManifest.dependencies || {}).some((name) => name.includes('supa' + 'base')) && !read('api/_lib/db.js').toLowerCase().includes('supa' + 'base')],
+  ['Supabase server connection', read('api/_lib/db.js').includes("@supabase/supabase-js") && read('api/_lib/db.js').includes('SUPABASE_URL') && read('api/_lib/db.js').includes('SUPABASE_SECRET_KEY')],
+  ['no legacy Neon dependency', !Object.keys(packageManifest.dependencies || {}).some((name) => name.includes('neon')) && !read('api/_lib/db.js').toLowerCase().includes('neon')],
   ['RLS on every T08 table', [
     't08_accounts', 't08_passkeys', 't08_private_items', 't08_webauthn_challenges',
     't08_sessions', 't08_auth_events'
