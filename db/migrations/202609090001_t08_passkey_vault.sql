@@ -1,7 +1,7 @@
 -- T08 passkey vault schema.
 -- All application reads/writes go through Vercel server functions using the
--- Neon/PostgreSQL connection string. Browser clients never receive direct
--- table grants; the API is the only database client.
+-- Supabase server key. Browser clients never receive direct table grants;
+-- the API is the only database client.
 
 create extension if not exists pgcrypto;
 
@@ -104,10 +104,18 @@ alter table public.t08_webauthn_challenges enable row level security;
 alter table public.t08_sessions enable row level security;
 alter table public.t08_auth_events enable row level security;
 
--- Neon is plain managed PostgreSQL, so revoke the default PUBLIC privileges.
-revoke all on table public.t08_accounts from public;
-revoke all on table public.t08_passkeys from public;
-revoke all on table public.t08_private_items from public;
-revoke all on table public.t08_webauthn_challenges from public;
-revoke all on table public.t08_sessions from public;
-revoke all on table public.t08_auth_events from public;
+-- Supabase Data API has two independent controls: table grants and RLS.
+-- Only the server-side service role may reach these application tables.
+grant usage on schema public to service_role;
+revoke all on table public.t08_accounts from public, anon, authenticated;
+revoke all on table public.t08_passkeys from public, anon, authenticated;
+revoke all on table public.t08_private_items from public, anon, authenticated;
+revoke all on table public.t08_webauthn_challenges from public, anon, authenticated;
+revoke all on table public.t08_sessions from public, anon, authenticated;
+revoke all on table public.t08_auth_events from public, anon, authenticated;
+grant select, insert, update, delete on table public.t08_accounts to service_role;
+grant select, insert, update, delete on table public.t08_passkeys to service_role;
+grant select, insert, update, delete on table public.t08_private_items to service_role;
+grant select, insert, update, delete on table public.t08_webauthn_challenges to service_role;
+grant select, insert, update, delete on table public.t08_sessions to service_role;
+grant select, insert, update, delete on table public.t08_auth_events to service_role;

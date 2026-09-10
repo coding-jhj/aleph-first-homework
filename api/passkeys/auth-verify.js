@@ -1,5 +1,5 @@
 import { getConfig } from '../_lib/config.js';
-import { execute, queryOne } from '../_lib/db.js';
+import { fetchOne, updateRows } from '../_lib/db.js';
 import { getAccountById, publicAccount } from '../_lib/accounts.js';
 import { getFlowId, clearFlowCookie, createSession } from '../_lib/session.js';
 import { consumeChallenge, peekChallenge } from '../_lib/challenges.js';
@@ -49,12 +49,10 @@ export default async function handler(req, res) {
       return;
     }
 
-    const passkey = await queryOne(
-      `select id, account_id, credential_id, public_key, counter, transports
-       from public.t08_passkeys
-       where credential_id = $1
-       limit 1`,
-      [credentialId]
+    const passkey = await fetchOne(
+      't08_passkeys',
+      'id, account_id, credential_id, public_key, counter, transports',
+      (query) => query.eq('credential_id', credentialId).limit(1)
     );
 
     if (!passkey) {
@@ -118,12 +116,10 @@ export default async function handler(req, res) {
     }
 
     const newCounter = Number(verification.authenticationInfo.newCounter);
-    await execute(
-      `update public.t08_passkeys
-       set counter = $1
-       where id = $2
-         and account_id = $3`,
-      [Math.max(Number(passkey.counter), newCounter), passkey.id, challenge.account_id]
+    await updateRows(
+      't08_passkeys',
+      { counter: Math.max(Number(passkey.counter), newCounter) },
+      (query) => query.eq('id', passkey.id).eq('account_id', challenge.account_id)
     );
 
     const account = await getAccountById(challenge.account_id);

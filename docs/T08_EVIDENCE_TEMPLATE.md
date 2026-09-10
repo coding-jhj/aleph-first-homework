@@ -10,7 +10,7 @@
 - 브라우저/OS:
 - 사용한 authenticator:
 - Production 또는 Preview origin:
-- 데이터베이스: Neon PostgreSQL
+- 데이터베이스: Supabase PostgreSQL
 - 테스트 계정: sample-a / sample-b
 
 ## 검사 1: no-login private read

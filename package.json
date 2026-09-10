@@ -11,8 +11,8 @@
     "syntax": "node scripts/check-syntax.mjs"
   },
   "dependencies": {
-    "@neondatabase/serverless": "1.1.0",
-    "@simplewebauthn/server": "13.3.3"
+    "@simplewebauthn/server": "13.3.3",
+    "@supabase/supabase-js": "2.116.0"
   },
   "devDependencies": {
     "@babel/parser": "8.0.4"

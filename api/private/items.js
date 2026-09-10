@@ -1,4 +1,4 @@
-import { query } from '../_lib/db.js';
+import { fetchRows } from '../_lib/db.js';
 import { requireSession } from '../_lib/session.js';
 import { isHttpMethod, methodNotAllowed, sendJson, reportUnexpectedError } from '../_lib/http.js';
 
@@ -12,12 +12,12 @@ export default async function handler(req, res) {
     const session = await requireSession(req, res);
     if (!session) return;
 
-    const items = await query(
-      `select id, title, content, created_at, sort_order
-       from public.t08_private_items
-       where account_id = $1
-       order by sort_order asc, created_at asc`,
-      [session.account_id]
+    const items = await fetchRows(
+      't08_private_items',
+      'id, title, content, created_at, sort_order',
+      (query) => query.eq('account_id', session.account_id)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true })
     );
 
     sendJson(res, 200, {

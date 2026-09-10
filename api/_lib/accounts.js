@@ -1,23 +1,13 @@
-import { queryOne } from './db.js';
+import { fetchOne } from './db.js';
+
+const ACCOUNT_COLUMNS = 'id, handle, display_name, webauthn_user_id, created_at';
 
 export async function getAccountById(id) {
-  return queryOne(
-    `select id, handle, display_name, webauthn_user_id, created_at
-     from public.t08_accounts
-     where id = $1
-     limit 1`,
-    [id]
-  );
+  return fetchOne('t08_accounts', ACCOUNT_COLUMNS, (query) => query.eq('id', id).limit(1));
 }
 
 export async function getAccountByHandle(handle) {
-  return queryOne(
-    `select id, handle, display_name, webauthn_user_id, created_at
-     from public.t08_accounts
-     where handle = $1
-     limit 1`,
-    [handle]
-  );
+  return fetchOne('t08_accounts', ACCOUNT_COLUMNS, (query) => query.eq('handle', handle).limit(1));
 }
 
 export function publicAccount(account) {
