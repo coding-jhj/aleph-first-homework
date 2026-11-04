@@ -1,0 +1,267 @@
+{
+  "base": "https://aleph-first-homework.vercel.app",
+  "run": "2026-11-04T02:05:39.649Z",
+  "authenticator": "Chromium CDP WebAuthn virtual authenticator (ctap2/internal, UV)",
+  "results": [
+    {
+      "id": "C1-1",
+      "check": "로그아웃 상태 초기 HTML에 private 실제 내용 없음",
+      "expected": "내용 문구 미포함",
+      "actual": "private 문구 없음",
+      "ok": true,
+      "at": "2026-11-04T02:03:28.236Z"
+    },
+    {
+      "id": "C1-2",
+      "check": "cookie 없이 GET /api/private/items",
+      "expected": "401 authentication_required",
+      "actual": "401 authentication_required",
+      "ok": true,
+      "at": "2026-11-04T02:03:28.842Z"
+    },
+    {
+      "id": "C0-A",
+      "check": "A 첫 패스키 등록 후 세션·private 자료",
+      "expected": "200, 자료 3개 이상",
+      "actual": "session 200, items 200 count=3, UI cards=3",
+      "ok": true,
+      "at": "2026-11-04T02:03:42.504Z"
+    },
+    {
+      "id": "C4-1",
+      "check": "한 계정에 passkey 2개 등록",
+      "expected": "목록 nickname/date 2개",
+      "actual": "count=2 [virtual-device-1, virtual-device-2]",
+      "ok": true,
+      "at": "2026-11-04T02:03:57.044Z"
+    },
+    {
+      "id": "C1-3",
+      "check": "로그아웃 후 GET /api/private/items",
+      "expected": "401 authentication_required",
+      "actual": "401 authentication_required",
+      "ok": true,
+      "at": "2026-11-04T02:04:04.140Z"
+    },
+    {
+      "id": "C0-B",
+      "check": "A passkey 재로그인 후 private read",
+      "expected": "200, A 자료",
+      "actual": "200 count=3 first=\"vauth-a-r2 전용으로 생성된 synthetic 기록입니다.\"",
+      "ok": true,
+      "at": "2026-11-04T02:04:17.385Z"
+    },
+    {
+      "id": "C2-1",
+      "check": "A/B 자료 분리",
+      "expected": "A와 B의 자료 내용이 서로 다름",
+      "actual": "A=\"vauth-a-r2 전용으로 생성된 synthetic 기록입니다.\" / B=\"vauth-b-r2 전용으로 생성된 synthetic 기록입니다.\"",
+      "ok": true,
+      "at": "2026-11-04T02:04:29.799Z"
+    },
+    {
+      "id": "C2-2",
+      "check": "A 세션으로 B accountId URL 요청",
+      "expected": "403 account_scope_mismatch, B 자료 없음",
+      "actual": "403 account_scope_mismatch items=false",
+      "ok": true,
+      "at": "2026-11-04T02:04:36.839Z"
+    },
+    {
+      "id": "C2-3",
+      "check": "B 세션으로 A accountId URL 요청",
+      "expected": "403 account_scope_mismatch, A 자료 없음",
+      "actual": "403 account_scope_mismatch items=false",
+      "ok": true,
+      "at": "2026-11-04T02:04:38.266Z"
+    },
+    {
+      "id": "C2-4",
+      "check": "A 세션으로 A 자신의 accountId URL 요청",
+      "expected": "200, A 자료",
+      "actual": "200 count=3",
+      "ok": true,
+      "at": "2026-11-04T02:04:39.468Z"
+    },
+    {
+      "id": "C3-1",
+      "check": "auth-options 두 번 호출",
+      "expected": "challenge fingerprint 두 값이 서로 다름",
+      "actual": "2c6dc96f843e2370 vs fe2ad5484c0fb87c",
+      "ok": true,
+      "at": "2026-11-04T02:04:43.730Z"
+    },
+    {
+      "id": "C3-2",
+      "check": "정상 assertion 첫 요청",
+      "expected": "200, session cookie 설정",
+      "actual": "200 setCookie=true",
+      "ok": true,
+      "at": "2026-11-04T02:04:49.822Z",
+      "fingerprint": "9a08b7939a912a23"
+    },
+    {
+      "id": "C3-3",
+      "check": "같은 flow/assertion 재전송",
+      "expected": "401 challenge_rejected",
+      "actual": "401 challenge_rejected",
+      "ok": true,
+      "at": "2026-11-04T02:04:51.163Z"
+    },
+    {
+      "id": "C4-2",
+      "check": "첫 passkey 삭제",
+      "expected": "남은 passkey 1개, 자료 count 유지(3)",
+      "actual": "before=2 after=1 [virtual-device-2] items=3",
+      "ok": true,
+      "at": "2026-11-04T02:05:04.651Z"
+    },
+    {
+      "id": "C4-3",
+      "check": "남은 passkey 로그인",
+      "expected": "200 및 private 자료 접근",
+      "actual": "200 count=3",
+      "ok": true,
+      "at": "2026-11-04T02:05:20.426Z"
+    },
+    {
+      "id": "C4-4",
+      "check": "삭제한 passkey 로그인 시도 (서버에 assertion 직접 제출)",
+      "expected": "401, private 자료 없음",
+      "actual": "401 credential_not_registered; private read 401",
+      "ok": true,
+      "at": "2026-11-04T02:05:26.061Z"
+    },
+    {
+      "id": "C3-4",
+      "check": "security events 조회",
+      "expected": "replay·삭제 credential·scope 거부 이벤트 기록, 비밀값 없음",
+      "actual": "events=13, missing=[], secretLeak=true",
+      "ok": false,
+      "at": "2026-11-04T02:05:35.956Z",
+      "events": [
+        {
+          "event_type": "authentication_verified",
+          "success": true,
+          "reason_code": "authentication_verified",
+          "challenge_fingerprint": "18f9a84296de6d1d",
+          "credential_fingerprint": "2e3363a19be1545e",
+          "created_at": "2026-11-04T02:05:30.677383+00:00"
+        },
+        {
+          "event_type": "authentication_failed",
+          "success": false,
+          "reason_code": "credential_not_registered",
+          "challenge_fingerprint": "12c1221999f0aa7a",
+          "credential_fingerprint": "d00f9b4fb205c4ce",
+          "created_at": "2026-11-04T02:05:25.762473+00:00"
+        },
+        {
+          "event_type": "logout",
+          "success": true,
+          "reason_code": "explicit_logout",
+          "challenge_fingerprint": null,
+          "credential_fingerprint": null,
+          "created_at": "2026-11-04T02:05:21.375495+00:00"
+        },
+        {
+          "event_type": "authentication_verified",
+          "success": true,
+          "reason_code": "authentication_verified",
+          "challenge_fingerprint": "d684014daebf324d",
+          "credential_fingerprint": "2e3363a19be1545e",
+          "created_at": "2026-11-04T02:05:15.679411+00:00"
+        },
+        {
+          "event_type": "logout",
+          "success": true,
+          "reason_code": "explicit_logout",
+          "challenge_fingerprint": null,
+          "credential_fingerprint": null,
+          "created_at": "2026-11-04T02:05:09.359005+00:00"
+        },
+        {
+          "event_type": "passkey_deleted",
+          "success": true,
+          "reason_code": "passkey_deleted",
+          "challenge_fingerprint": null,
+          "credential_fingerprint": "d00f9b4fb205c4ce",
+          "created_at": "2026-11-04T02:04:59.301991+00:00"
+        },
+        {
+          "event_type": "challenge_rejected",
+          "success": false,
+          "reason_code": "challenge_replay_or_expired",
+          "challenge_fingerprint": "9a08b7939a912a23",
+          "credential_fingerprint": "d00f9b4fb205c4ce",
+          "created_at": "2026-11-04T02:04:51.035977+00:00"
+        },
+        {
+          "event_type": "authentication_verified",
+          "success": true,
+          "reason_code": "authentication_verified",
+          "challenge_fingerprint": "9a08b7939a912a23",
+          "credential_fingerprint": "d00f9b4fb205c4ce",
+          "created_at": "2026-11-04T02:04:49.683316+00:00"
+        },
+        {
+          "event_type": "authorization_denied",
+          "success": false,
+          "reason_code": "account_scope_mismatch",
+          "challenge_fingerprint": null,
+          "credential_fingerprint": null,
+          "created_at": "2026-11-04T02:04:36.712672+00:00"
+        },
+        {
+          "event_type": "authentication_verified",
+          "success": true,
+          "reason_code": "authentication_verified",
+          "challenge_fingerprint": "ea0b90a9bc8c4893",
+          "credential_fingerprint": "d00f9b4fb205c4ce",
+          "created_at": "2026-11-04T02:04:12.75724+00:00"
+        },
+        {
+          "event_type": "logout",
+          "success": true,
+          "reason_code": "explicit_logout",
+          "challenge_fingerprint": null,
+          "credential_fingerprint": null,
+          "created_at": "2026-11-04T02:04:03.145077+00:00"
+        },
+        {
+          "event_type": "registration_verified",
+          "success": true,
+          "reason_code": "registration_verified",
+          "challenge_fingerprint": "3a4b7588e25b235b",
+          "credential_fingerprint": "2e3363a19be1545e",
+          "created_at": "2026-11-04T02:03:52.262338+00:00"
+        },
+        {
+          "event_type": "registration_verified",
+          "success": true,
+          "reason_code": "registration_verified",
+          "challenge_fingerprint": "ff59a96e7ef4c2ea",
+          "credential_fingerprint": "d00f9b4fb205c4ce",
+          "created_at": "2026-11-04T02:03:36.203697+00:00"
+        }
+      ]
+    },
+    {
+      "id": "C3-4r",
+      "check": "security events 조회 (정정: 이벤트 배열만 검사)",
+      "expected": "replay·삭제 credential·scope 거부 이벤트 기록, 이벤트에 비밀값 없음",
+      "actual": "events=13, 필수 이벤트 누락 0, 이벤트 필드=['challenge_fingerprint', 'created_at', 'credential_fingerprint', 'event_type', 'reason_code', 'success'], 비밀값 패턴 일치=0건",
+      "ok": true,
+      "at": "2026-11-04T02:05:54.778099Z",
+      "supersedes": {
+        "id": "C3-4",
+        "check": "security events 조회",
+        "expected": "replay·삭제 credential·scope 거부 이벤트 기록, 비밀값 없음",
+        "actual": "events=13, missing=[], secretLeak=true",
+        "ok": false,
+        "at": "2026-11-04T02:05:35.956Z"
+      },
+      "note": "원 기록 C3-4의 secretLeak=true는 응답 전체 JSON의 redaction 설명 문구(\"signatures ... never returned\")에 정규식이 일치한 오탐이었다. 원 기록은 수정하지 않고 보존한다."
+    }
+  ]
+}

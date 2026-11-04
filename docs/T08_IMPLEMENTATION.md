@@ -1,6 +1,6 @@
 # T08 Passkey Private Portfolio 구현 문서
 
-상태: Supabase PostgreSQL 전환, 코드·문서·정적 검증 구현 완료. 실제 WebAuthn 기기 테스트와 배포 증거는 Supabase migration과 Vercel 환경변수 입력 후 기록해야 한다.
+상태: Supabase PostgreSQL 전환, 코드·문서·정적 검증 구현 완료. 배포 사이트에 대한 **가상 authenticator(Chromium) 증거**를 [`T08_EVIDENCE_TEMPLATE.md`](T08_EVIDENCE_TEMPLATE.md)에 기록했다. **실기기 passkey 검증은 아직 하지 않았다.**
 
 ## ① 무엇을 사용했나
 
@@ -41,14 +41,14 @@ T08의 핵심은 로그인 화면을 꾸미는 것이 아니라 “서버가 cha
 
 ## ④ 거부 동작을 증명하는 기록
 
-아래 표는 제출 시 실제 브라우저·API 테스트 결과를 양쪽에 기록하는 형식이다. 현재 작업 환경에는 사용자의 Supabase 서버 키와 실제 passkey 기기가 없으므로, 빈 칸을 통과로 표시하지 않았다.
+아래 표는 성공 쪽과 거부 쪽을 함께 기록하는 형식이다. 실제 결과는 Chromium 가상 authenticator로 배포 사이트에 실행해 기록했고, 실기기로 한 시험이 아니므로 그렇게 구분해 적었다.
 
 | 검사 | 성공 쪽 | 거부 쪽 | 실제 증거 |
 | --- | --- | --- | --- |
-| no-login private read | passkey 로그인 후 GET `/api/private/items`가 현재 계정의 synthetic record 3개 이상 반환 | cookie 없이 같은 요청은 401 `authentication_required`, private body 없음 | 배포 후 기록 필요 |
-| other-passkey / other-account | A로 로그인하면 A 자료만 반환 | A 세션으로 B URL을 읽으면 403 `account_scope_mismatch`, B 자료·count 없음. B도 역방향 동일 | 배포 후 기록 필요 |
-| challenge replay | 새 login challenge와 정상 assertion으로 200 및 session 생성 | 같은 challenge/assertion을 재전송하면 401 `challenge_rejected`, challenge_fingerprint 이벤트 기록 | 배포 후 기록 필요 |
-| deleted-passkey login | 두 passkey 중 하나를 삭제한 뒤 남은 passkey로 200 로그인 | 삭제한 credential로 시도하면 401 `credential_not_registered` 또는 `signature_verification_failed` 이벤트 기록 | 배포 후 기록 필요 |
+| no-login private read | passkey 로그인 후 GET `/api/private/items`가 현재 계정의 synthetic record 3개 이상 반환 | cookie 없이 같은 요청은 401 `authentication_required`, private body 없음 | 가상 authenticator로 확인함. [증거 기록](T08_EVIDENCE_TEMPLATE.md) 참고. 실기기는 미확인 |
+| other-passkey / other-account | A로 로그인하면 A 자료만 반환 | A 세션으로 B URL을 읽으면 403 `account_scope_mismatch`, B 자료·count 없음. B도 역방향 동일 | 가상 authenticator로 확인함. [증거 기록](T08_EVIDENCE_TEMPLATE.md) 참고. 실기기는 미확인 |
+| challenge replay | 새 login challenge와 정상 assertion으로 200 및 session 생성 | 같은 challenge/assertion을 재전송하면 401 `challenge_rejected`, challenge_fingerprint 이벤트 기록 | 가상 authenticator로 확인함. [증거 기록](T08_EVIDENCE_TEMPLATE.md) 참고. 실기기는 미확인 |
+| deleted-passkey login | 두 passkey 중 하나를 삭제한 뒤 남은 passkey로 200 로그인 | 삭제한 credential로 시도하면 401 `credential_not_registered` 또는 `signature_verification_failed` 이벤트 기록 | 가상 authenticator로 확인함. [증거 기록](T08_EVIDENCE_TEMPLATE.md) 참고. 실기기는 미확인 |
 
 거부 판정의 source of truth는 `api/passkeys/auth-verify.js`와 `api/private/accounts/[accountId]/items.js`다. 보안 이벤트의 예시 응답은 fingerprint만 포함하고 session token·서명·private key는 포함하지 않는다.
 
