@@ -4,6 +4,8 @@
   <p>비밀번호 없이 passkey로 인증하고, 인증된 계정의 자료만 안전하게 보여주는 T08 포트폴리오 서비스입니다.</p>
 
   <p>
+    <a href="https://aleph-first-homework.vercel.app">배포 사이트</a>
+    ·
     <a href="https://github.com/coding-jhj/aleph-first-homework">Repository</a>
     ·
     <a href="docs/T08_SETUP.md">설정 가이드</a>
@@ -27,6 +29,10 @@
 | --- | --- | --- | --- |
 | 공개 포트폴리오를 바로 탐색 | passkey로 private 공간 진입 | 계정 범위와 서명을 검증 | 실제 허용·거부 동작을 증명 |
 | 로그인 전 private 내용은 보지 못함 | private records와 passkey 목록 확인 | Supabase PostgreSQL에 필요한 정보만 저장 | 화면·API·Network 증거 캡처 |
+
+> **이 저장소에 대해**
+>
+> 기존 개인 포트폴리오(T01)를 바탕으로 만든 **과제 제출용 사본**입니다. 공개 화면의 이름과 연락처(`JHJ`, `hello@example.com`)와 private 자료는 모두 **가상(synthetic) 데이터**입니다.
 
 > **핵심 경험**
 >
@@ -274,22 +280,24 @@ code: account_scope_mismatch
 5. 가능한 환경에서는 삭제된 credential 로그인도 시도합니다.
 6. 삭제된 credential은 HTTP 401로 거부되어야 합니다.
 
-## 제출 증거
+## 검증 현황
 
-실제 결과는 [T08 증거 양식](docs/T08_EVIDENCE_TEMPLATE.md)에 기록합니다.
+실제 결과는 [T08 증거 기록](docs/T08_EVIDENCE_TEMPLATE.md)에 있고, 원본 응답은 [`docs/evidence/evidence.json`](docs/evidence/evidence.json)에 있습니다.
 
-| 증거 | 기대 결과 |
-| --- | --- |
-| public page | 인증 없이 portfolio 표시 |
-| private read without session | 401 authentication_required |
-| 정상 passkey 로그인 | 200 및 private workspace 표시 |
-| 계정 A/B 자료 분리 | 서로 다른 synthetic records |
-| 다른 accountId 접근 | 403 account_scope_mismatch |
-| challenge replay | 401 challenge_rejected |
-| passkey 삭제 | 목록 감소 및 삭제 credential 거부 |
-| security events | fingerprint와 reason code만 반환 |
+| 증거 | 기대 결과 | 가상 authenticator | 실기기 |
+| --- | --- | --- | --- |
+| public page | 인증 없이 portfolio 표시 | 확인 | 미확인 |
+| private read without session | 401 authentication_required | 확인 (401) | 미확인 |
+| 정상 passkey 로그인 | 200 및 private workspace 표시 | 확인 (200) | 미확인 |
+| 계정 A/B 자료 분리 | 서로 다른 synthetic records | 확인 | 미확인 |
+| 다른 accountId 접근 | 403 account_scope_mismatch | 확인 (403, 양방향) | 미확인 |
+| challenge replay | 401 challenge_rejected | 확인 (401) | 미확인 |
+| passkey 삭제 | 목록 감소 및 삭제 credential 거부 | 확인 (2→1, 삭제 credential 401) | 미확인 |
+| security events | fingerprint와 reason code만 반환 | 확인 | 미확인 |
 
-기대 결과만 적지 말고 실제 HTTP status, response code, 화면 또는 Network 캡처를 함께 남깁니다.
+- **가상 authenticator**: Chromium의 WebAuthn 가상 authenticator로 배포 사이트에 실행했습니다. 서버는 실제 서명·origin·RP ID·challenge를 검증했지만, 물리 기기로 한 시험은 아닙니다.
+- **실기기**: Windows Hello·휴대전화 passkey·FIDO2 보안 키로는 아직 시험하지 않았습니다. 직접 시험한 뒤 위 표의 "미확인"을 갱신해 주세요.
+- 기대 결과만 적지 말고 실제 HTTP status, response code, 화면 또는 Network 캡처를 함께 남깁니다.
 
 ## 저장소 지도
 
@@ -303,6 +311,7 @@ code: account_scope_mismatch
 │   └── _lib/           # DB·세션·WebAuthn·HTTP helper
 ├── db/migrations/      # PostgreSQL schema
 ├── docs/               # 설정·구현·증거 문서
+│   └── evidence/       # 가상 authenticator 실행 결과(JSON)와 캡처
 ├── scripts/            # 문법·요구사항 검사
 ├── package.json
 └── vercel.json
@@ -342,6 +351,7 @@ code: account_scope_mismatch
 
 - Supabase 프로젝트와 migration 실행은 배포 계정 권한이 필요합니다.
 - 실제 passkey 검증은 HTTPS와 실제 authenticator가 필요합니다.
+- 정적 검사(`npm run check`)는 코드와 문서에 특정 문자열이 있는지 확인할 뿐 동작을 증명하지 않습니다. 동작 증거는 위 검증 현황의 기록을 따릅니다.
 - Preview Protection이 켜져 있으면 Preview API 대신 접근 가능한 Production 또는 테스트 배포를 사용해야 합니다.
 - 마지막 passkey를 삭제하면 해당 계정의 세션도 종료됩니다.
 - 복구 이메일이나 관리자 강제 재등록 기능은 이 과제 범위에 포함하지 않았습니다.
