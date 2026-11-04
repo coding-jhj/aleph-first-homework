@@ -1,4 +1,4 @@
-# T08 증거 기록
+# 검증 기록
 
 배포 URL: https://aleph-first-homework.vercel.app
 
