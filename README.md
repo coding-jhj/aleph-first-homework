@@ -1,7 +1,7 @@
 <div align="center">
   <h1>🔐 Passkey Private Portfolio</h1>
   <p><strong>공개 포트폴리오와 나만의 private workspace를 하나의 서비스 경험으로.</strong></p>
-  <p>비밀번호 없이 passkey로 인증하고, 인증된 계정의 자료만 안전하게 보여주는 T08 포트폴리오 서비스입니다.</p>
+  <p>비밀번호 없이 passkey로 인증하고, 인증된 계정의 자료만 안전하게 보여주는 포트폴리오 서비스입니다.</p>
 
   <p>
     <a href="https://aleph-first-homework.vercel.app">배포 사이트</a>
@@ -10,7 +10,7 @@
     ·
     <a href="docs/T08_SETUP.md">설정 가이드</a>
     ·
-    <a href="docs/T08_EVIDENCE_TEMPLATE.md">검증 증거 양식</a>
+    <a href="docs/T08_EVIDENCE_TEMPLATE.md">검증 기록</a>
   </p>
 
   <p>
@@ -19,24 +19,31 @@
     <img src="https://img.shields.io/badge/Database-Supabase%20PostgreSQL-3ECF8E?logo=supabase&logoColor=white" alt="Supabase PostgreSQL">
     <img src="https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white" alt="Vercel">
   </p>
+
+  <img src="docs/evidence/02-workspace-2-passkeys.png" width="720" alt="인증 후 화면 — 계정별 private 자료, passkey 목록, 인증 기록">
+  <p><sub>인증 후 private workspace (가상 authenticator로 시험한 배포 화면, 가상 데이터)</sub></p>
 </div>
 
 ---
 
 ## 서비스 한눈에 보기
 
-| 방문자 | 계정 소유자 | 서버 | 제출자 |
+| 방문자 | 계정 소유자 | 서버 | 검증자 |
 | --- | --- | --- | --- |
 | 공개 포트폴리오를 바로 탐색 | passkey로 private 공간 진입 | 계정 범위와 서명을 검증 | 실제 허용·거부 동작을 증명 |
 | 로그인 전 private 내용은 보지 못함 | private records와 passkey 목록 확인 | Supabase PostgreSQL에 필요한 정보만 저장 | 화면·API·Network 증거 캡처 |
 
 > **이 저장소에 대해**
 >
-> 기존 개인 포트폴리오(T01)를 바탕으로 만든 **과제 제출용 사본**입니다. 공개 화면의 이름과 연락처(`JHJ`, `hello@example.com`)와 private 자료는 모두 **가상(synthetic) 데이터**입니다.
+> ALEPH 과제로 만든 개인 프로젝트이며, 기존 개인 포트폴리오를 바탕으로 만든 **사본**입니다. 공개 화면의 이름과 연락처(`JHJ`, `hello@example.com`)와 private 자료는 모두 **가상(synthetic) 데이터**입니다.
 
 > **핵심 경험**
 >
 > 인증 전에는 누구나 볼 수 있는 portfolio, 인증 후에는 나만 볼 수 있는 workspace가 같은 페이지 안에서 자연스럽게 이어집니다.
+
+| 구성 | 개인 프로젝트 · ALEPH 과제 |
+| --- | --- |
+| 기간 | 2026.09.09 – 2026.09.10 (검증 기록은 2026.11.04 추가) |
 
 ## 서비스 흐름
 
@@ -64,7 +71,7 @@ flowchart LR
 | session token 보호 | cookie에는 opaque token, DB에는 SHA-256 digest만 저장 |
 | 계정 범위 강제 | private query와 다른 계정 URL 모두 session.account_id 기준으로 검사 |
 | 직접 DB 노출 차단 | 브라우저는 DB에 연결하지 않고 Vercel API만 호출 |
-| DB 방어 계층 | T08 테이블 RLS 활성화 및 PUBLIC 직접 테이블 권한 철회 |
+| DB 방어 계층 | 6개 서버 전용 테이블(`t08_*`) RLS 활성화 및 PUBLIC 직접 테이블 권한 철회 |
 
 ## 기술 스택
 
@@ -73,7 +80,7 @@ flowchart LR
 - **Authentication**: WebAuthn, @simplewebauthn/server
 - **Database**: Supabase managed PostgreSQL
 - **Database client**: @supabase/supabase-js (server-only)
-- **Validation**: Node.js syntax check, T08 static check, npm audit
+- **Validation**: Node.js syntax check, 정적 검사(`npm run check`), npm audit
 
 ## 빠른 시작
 
@@ -190,7 +197,7 @@ Vercel Project Settings → Environment Variables에서 Preview와 Production �
 - 이 서비스의 사용자 계정은 Supabase 프로젝트가 아니라 `t08_accounts` 행으로 분리됩니다. 앱마다 프로젝트를 새로 만들지 말고 이 프로젝트 하나를 계속 사용합니다.
 - 무료 플랜은 활성 프로젝트 2개까지이므로 `production` 1개와 `실험용` 1개 정도로만 운영합니다. Preview마다 Supabase 프로젝트를 만들 필요가 없습니다.
 - 사용하지 않는 프로젝트는 일시정지할 수 있습니다. 일시정지된 프로젝트는 무료 프로젝트 할당량에 포함되지 않지만, 장기간 방치하지 말고 필요한 때 복구합니다.
-- 무료 프로젝트는 7일 동안 활동이 적으면 자동 일시정지될 수 있습니다. 과제 제출용 프로젝트는 가끔 실제 페이지를 열어 상태를 확인합니다.
+- 무료 프로젝트는 7일 동안 활동이 적으면 자동 일시정지될 수 있습니다. 오래 쓰지 않는 프로젝트는 가끔 실제 페이지를 열어 상태를 확인합니다.
 - Supabase Dashboard의 Billing/Usage에서 저장공간·대역폭·데이터베이스 사용량을 확인하고, 불필요한 테스트 계정과 이벤트를 정리합니다.
 - 무료 프로젝트 제한을 우회하기 위해 여러 계정을 만들거나 가짜 트래픽을 발생시키는 방식은 사용하지 않습니다. 추가 프로젝트가 정말 필요하면 별도 무료 조직을 만들 수 있지만, 이 과제에는 프로젝트 하나가 가장 단순합니다.
 
@@ -282,7 +289,7 @@ code: account_scope_mismatch
 
 ## 검증 현황
 
-실제 결과는 [T08 증거 기록](docs/T08_EVIDENCE_TEMPLATE.md)에 있고, 원본 응답은 [`docs/evidence/evidence.json`](docs/evidence/evidence.json)에 있습니다.
+실제 결과는 [검증 기록](docs/T08_EVIDENCE_TEMPLATE.md)에 있고, 원본 응답은 [`docs/evidence/evidence.json`](docs/evidence/evidence.json)에 있습니다.
 
 | 증거 | 기대 결과 | 가상 authenticator | 실기기 |
 | --- | --- | --- | --- |
@@ -329,7 +336,7 @@ code: account_scope_mismatch
 ### 데이터베이스
 
 - Supabase SQL Editor에서 migration 실행
-- 여섯 T08 테이블 생성
+- 여섯 `t08_*` 테이블 생성
 - RLS 활성화 확인
 - server-only Supabase URL/키 설정
 
@@ -341,11 +348,6 @@ code: account_scope_mismatch
 - 계정 A/B의 자료가 서로 분리됨
 - 실패·replay·다른 계정 접근이 각각 401/403으로 거부됨
 
-### 제출
-
-- docs/T08_EVIDENCE_TEMPLATE.md 작성
-- 실제 화면과 API/Network 증거 첨부
-- Production URL과 테스트 환경 기록
 
 ## 제한 사항
 
