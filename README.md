@@ -6,8 +6,6 @@
   <p>
     <a href="https://aleph-first-homework.vercel.app">배포 사이트</a>
     ·
-    <a href="https://github.com/coding-jhj/aleph-first-homework">Repository</a>
-    ·
     <a href="docs/T08_SETUP.md">설정 가이드</a>
     ·
     <a href="docs/T08_EVIDENCE_TEMPLATE.md">검증 기록</a>
@@ -26,24 +24,11 @@
 
 ---
 
-## 서비스 한눈에 보기
-
-| 방문자 | 계정 소유자 | 서버 | 검증자 |
-| --- | --- | --- | --- |
-| 공개 포트폴리오를 바로 탐색 | passkey로 private 공간 진입 | 계정 범위와 서명을 검증 | 실제 허용·거부 동작을 증명 |
-| 로그인 전 private 내용은 보지 못함 | private records와 passkey 목록 확인 | Supabase PostgreSQL에 필요한 정보만 저장 | 화면·API·Network 증거 캡처 |
-
-> **이 저장소에 대해**
->
-> ALEPH 과제로 만든 개인 프로젝트이며, 기존 개인 포트폴리오를 바탕으로 만든 **사본**입니다. 공개 화면의 이름과 연락처(`JHJ`, `hello@example.com`)와 private 자료는 모두 **가상(synthetic) 데이터**입니다.
-
-> **핵심 경험**
->
-> 인증 전에는 누구나 볼 수 있는 portfolio, 인증 후에는 나만 볼 수 있는 workspace가 같은 페이지 안에서 자연스럽게 이어집니다.
-
-| 구성 | 개인 프로젝트 · ALEPH 과제 |
+| | |
 | --- | --- |
+| 구성 | 개인 프로젝트 · ALEPH 과제 |
 | 기간 | 2026.09.09 – 2026.09.10 (검증 기록은 2026.11.04 추가) |
+| 참고 | 공개 화면의 이름·연락처(`JHJ`, `hello@example.com`)와 private 자료는 모두 **가상(synthetic) 데이터**입니다. |
 
 ## 서비스 흐름
 
@@ -55,11 +40,11 @@ flowchart LR
     D --> E["Private workspace"]
 ~~~
 
-## 이 서비스가 해결하는 것
+## 핵심 기능
 
 - **Passwordless access** — 비밀번호를 저장하거나 입력하지 않고 기기·보안 키의 passkey를 사용합니다.
 - **Account isolation** — 현재 로그인 세션의 account_id로만 private 자료를 조회합니다.
-- **Multi-device ready** — 한 계정에 여러 passkey를 등록하고 개별 삭제할 수 있습니다.
+- **Multi-device** — 한 계정에 여러 passkey를 등록하고 개별 삭제할 수 있습니다.
 - **Security evidence** — 성공·실패·replay·인가 거부를 짧은 fingerprint와 reason code로 기록합니다.
 
 ## 보안 설계
@@ -75,226 +60,19 @@ flowchart LR
 
 ## 기술 스택
 
-- **Frontend**: 기존 단일 index.html portfolio + native Web Authentication API
+- **Frontend**: 단일 `index.html` portfolio + native Web Authentication API
 - **API**: Vercel Node.js Functions
 - **Authentication**: WebAuthn, @simplewebauthn/server
-- **Database**: Supabase managed PostgreSQL
-- **Database client**: @supabase/supabase-js (server-only)
+- **Database**: Supabase managed PostgreSQL, @supabase/supabase-js (server-only)
 - **Validation**: Node.js syntax check, 정적 검사(`npm run check`), npm audit
-
-## 빠른 시작
-
-### 준비물
-
-- Node.js 20 이상
-- Supabase 프로젝트 1개 (무료 플랜으로 충분)
-- Vercel 프로젝트
-- 실제 passkey를 사용할 HTTPS 도메인 또는 localhost 환경
-- 테스트용 authenticator: Windows Hello, 휴대전화 passkey, 또는 FIDO2 보안 키
-
-### 1. 코드 받기
-
-~~~bash
-git clone https://github.com/coding-jhj/aleph-first-homework.git
-cd aleph-first-homework
-npm ci
-npm run syntax
-npm run check
-~~~
-
-Windows PowerShell에서 npm.ps1 오류가 발생하면 다음처럼 실행합니다.
-
-~~~powershell
-npm.cmd ci
-npm.cmd run syntax
-npm.cmd run check
-~~~
-
-### 2. Supabase 프로젝트 키 준비
-
-Supabase Dashboard에서 다음 두 값을 확인합니다.
-
-| 값 | Dashboard 위치 | 저장할 환경변수 |
-| --- | --- | --- |
-| Project URL | Project Settings → API → Project URL | `SUPABASE_URL` |
-| 서버 전용 키 | Project Settings → API → Secret key 또는 legacy `service_role` key | `SUPABASE_SECRET_KEY` 또는 `SUPABASE_SERVICE_ROLE_KEY` |
-
-서버 전용 키는 절대 GitHub, README, 브라우저 코드, 채팅, 캡처 화면에 넣지 않습니다. 이번 구현은 Supabase Data API를 서버 함수에서만 사용하므로 PostgreSQL connection string은 필요하지 않습니다.
-
-### 3. 데이터베이스 초기화
-
-다음 migration 파일 전체를 Supabase Dashboard → SQL Editor에 붙여 넣고 실행합니다.
-
-~~~text
-db/migrations/202609090001_t08_passkey_vault.sql
-~~~
-
-migration이 만드는 테이블:
-
-~~~text
-t08_accounts
-t08_passkeys
-t08_private_items
-t08_webauthn_challenges
-t08_sessions
-t08_auth_events
-~~~
-
-생성 확인:
-
-~~~sql
-select table_name
-from information_schema.tables
-where table_schema = 'public'
-  and table_name like 't08_%'
-order by table_name;
-~~~
-
-RLS 확인:
-
-~~~sql
-select tablename, rowsecurity
-from pg_tables
-where schemaname = 'public'
-  and tablename like 't08_%'
-order by tablename;
-~~~
-
-여섯 테이블의 rowsecurity 값이 true인지 확인합니다.
-
-### 4. Vercel 환경변수 입력
-
-Vercel Project Settings → Environment Variables에서 Preview와 Production 환경에 입력합니다.
-
-| 변수 | 값 |
-| --- | --- |
-| SUPABASE_URL | Supabase Project URL. 예: `https://YOUR_PROJECT_REF.supabase.co` |
-| SUPABASE_SECRET_KEY | Supabase Secret key. 없으면 `SUPABASE_SERVICE_ROLE_KEY` 사용 |
-| PUBLIC_ORIGIN | 실제 접속 origin. 예: https://aleph-first-homework.vercel.app |
-| WEBAUTHN_RP_ID | origin의 hostname. 예: aleph-first-homework.vercel.app |
-| WEBAUTHN_RP_NAME | AI Engineer Portfolio private space |
-| WEBAUTHN_CHALLENGE_TTL_SECONDS | 300 |
-| SESSION_TTL_SECONDS | 28800 |
-
-규칙:
-
-- PUBLIC_ORIGIN은 https://를 포함합니다.
-- WEBAUTHN_RP_ID는 protocol과 path를 제외한 hostname만 입력합니다.
-- 실제 접속 hostname과 RP ID가 다르면 WebAuthn 검증이 실패합니다.
-- SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY는 `NEXT_PUBLIC_*` 같은 브라우저 노출 변수로 만들지 않습니다.
-- Preview URL이 계속 바뀌면 고정된 Production 또는 테스트 도메인에서 passkey를 시험합니다.
-
-### 5. 배포
-
-1. 환경변수를 저장합니다.
-2. Vercel Deployments에서 새 배포를 실행합니다.
-3. 상태가 Ready가 될 때까지 기다립니다.
-4. 배포 URL에서 public portfolio가 열리는지 확인합니다.
-5. 환경변수를 수정했다면 반드시 새 배포에서 반영됐는지 확인합니다.
-
-### 무료 플랜을 오래 쓰는 방법
-
-- 이 서비스의 사용자 계정은 Supabase 프로젝트가 아니라 `t08_accounts` 행으로 분리됩니다. 앱마다 프로젝트를 새로 만들지 말고 이 프로젝트 하나를 계속 사용합니다.
-- 무료 플랜은 활성 프로젝트 2개까지이므로 `production` 1개와 `실험용` 1개 정도로만 운영합니다. Preview마다 Supabase 프로젝트를 만들 필요가 없습니다.
-- 사용하지 않는 프로젝트는 일시정지할 수 있습니다. 일시정지된 프로젝트는 무료 프로젝트 할당량에 포함되지 않지만, 장기간 방치하지 말고 필요한 때 복구합니다.
-- 무료 프로젝트는 7일 동안 활동이 적으면 자동 일시정지될 수 있습니다. 오래 쓰지 않는 프로젝트는 가끔 실제 페이지를 열어 상태를 확인합니다.
-- Supabase Dashboard의 Billing/Usage에서 저장공간·대역폭·데이터베이스 사용량을 확인하고, 불필요한 테스트 계정과 이벤트를 정리합니다.
-- 무료 프로젝트 제한을 우회하기 위해 여러 계정을 만들거나 가짜 트래픽을 발생시키는 방식은 사용하지 않습니다. 추가 프로젝트가 정말 필요하면 별도 무료 조직을 만들 수 있지만, 이 과제에는 프로젝트 하나가 가장 단순합니다.
-
-## 첫 사용자 여정
-
-### A. sample-a 만들기
-
-1. 공개 별칭에 sample-a를 입력합니다.
-2. 표시 이름에 Sample Account A를 입력합니다.
-3. passkey 이름에 주 사용 기기를 입력합니다.
-4. 등록 버튼을 누릅니다.
-5. 브라우저·휴대전화·보안 키의 인증을 완료합니다.
-6. private records 3개 이상과 Passkey list가 나타나는지 확인합니다.
-
-첫 등록이 끝나면 account, passkey public key, synthetic private records가 생성됩니다.
-
-### B. 두 번째 기기 연결
-
-1. sample-a로 로그인된 상태를 유지합니다.
-2. 추가 passkey 이름에 보조 기기를 입력합니다.
-3. 다른 authenticator로 등록합니다.
-4. Passkey list에 2개가 표시되는지 확인합니다.
-
-### C. 로그아웃과 재로그인
-
-1. 로그아웃합니다.
-2. private workspace가 잠기는지 확인합니다.
-3. sample-a로 다시 passkey 로그인합니다.
-4. 같은 계정의 private records가 다시 표시되는지 확인합니다.
-
-### D. sample-b 격리 확인
-
-1. 로그아웃합니다.
-2. sample-b로 첫 passkey를 등록합니다.
-3. sample-b의 private records를 확인합니다.
-4. sample-a와 sample-b의 자료가 서로 다른지 확인합니다.
-5. passkey 목록이 서로 섞이지 않는지 확인합니다.
-
-## 검증 시나리오
-
-### 1. 로그인 없는 private read
-
-~~~bash
-curl -i https://YOUR_DOMAIN/api/private/items
-~~~
-
-기대 결과는 HTTP 401과 authentication_required입니다. 응답에 private record가 포함되면 안 됩니다.
-
-### 2. 다른 계정 접근
-
-로그인 후 Console에서 현재 계정 ID를 확인합니다.
-
-~~~js
-await fetch('/api/session', { credentials: 'include' }).then((r) => r.json())
-~~~
-
-A 세션으로 B 계정 URL을 요청합니다.
-
-~~~js
-await fetch('/api/private/accounts/SAMPLE_B_ACCOUNT_ID/items', {
-  credentials: 'include'
-}).then(async (r) => ({ status: r.status, body: await r.json() }))
-~~~
-
-기대 결과:
-
-~~~text
-HTTP 403
-code: account_scope_mismatch
-~~~
-
-### 3. Challenge replay
-
-1. DevTools Network에서 auth-verify 요청을 찾습니다.
-2. 정상 로그인을 한 번 성공시킵니다.
-3. 첫 auth-verify 요청을 Copy as cURL로 복사합니다.
-4. 동일 요청을 다시 실행합니다.
-5. HTTP 401, challenge_rejected가 반환되는지 확인합니다.
-6. /api/security/events에서 challenge_rejected 이벤트를 확인합니다.
-
-### 4. Passkey 삭제
-
-1. 한 계정에 passkey 2개를 등록합니다.
-2. 하나를 삭제합니다.
-3. 목록에 하나만 남는지 확인합니다.
-4. 남은 passkey로 로그인합니다.
-5. 가능한 환경에서는 삭제된 credential 로그인도 시도합니다.
-6. 삭제된 credential은 HTTP 401로 거부되어야 합니다.
 
 ## 검증 현황
 
-실제 결과는 [검증 기록](docs/T08_EVIDENCE_TEMPLATE.md)에 있고, 원본 응답은 [`docs/evidence/evidence.json`](docs/evidence/evidence.json)에 있습니다.
+배포 사이트에 Chromium의 WebAuthn **가상 authenticator**로 실행한 결과입니다. 서버는 실제 서명·origin·RP ID·challenge를 검증했지만 물리 기기로 한 시험은 아닙니다. 자세한 응답과 캡처는 [검증 기록](docs/T08_EVIDENCE_TEMPLATE.md)과 [`evidence.json`](docs/evidence/evidence.json)에 있습니다.
 
-| 증거 | 기대 결과 | 가상 authenticator | 실기기 |
+| 검사 | 기대 결과 | 가상 authenticator | 실기기 |
 | --- | --- | --- | --- |
-| public page | 인증 없이 portfolio 표시 | 확인 | 미확인 |
-| private read without session | 401 authentication_required | 확인 (401) | 미확인 |
+| 로그인 없는 private read | 401 authentication_required | 확인 (401) | 미확인 |
 | 정상 passkey 로그인 | 200 및 private workspace 표시 | 확인 (200) | 미확인 |
 | 계정 A/B 자료 분리 | 서로 다른 synthetic records | 확인 | 미확인 |
 | 다른 accountId 접근 | 403 account_scope_mismatch | 확인 (403, 양방향) | 미확인 |
@@ -302,66 +80,34 @@ code: account_scope_mismatch
 | passkey 삭제 | 목록 감소 및 삭제 credential 거부 | 확인 (2→1, 삭제 credential 401) | 미확인 |
 | security events | fingerprint와 reason code만 반환 | 확인 | 미확인 |
 
-- **가상 authenticator**: Chromium의 WebAuthn 가상 authenticator로 배포 사이트에 실행했습니다. 서버는 실제 서명·origin·RP ID·challenge를 검증했지만, 물리 기기로 한 시험은 아닙니다.
-- **실기기**: Windows Hello·휴대전화 passkey·FIDO2 보안 키로는 아직 시험하지 않았습니다. 직접 시험한 뒤 위 표의 "미확인"을 갱신해 주세요.
-- 기대 결과만 적지 말고 실제 HTTP status, response code, 화면 또는 Network 캡처를 함께 남깁니다.
+정적 검사(`npm run check`)는 코드와 문서에 특정 문자열이 있는지 확인할 뿐 동작을 증명하지 않습니다. 동작 증거는 위 표의 기록을 따릅니다.
 
-## 저장소 지도
+## 시작하기
+
+~~~bash
+git clone https://github.com/coding-jhj/aleph-first-homework.git
+cd aleph-first-homework
+npm ci
+npm run check
+~~~
+
+실제로 동작시키려면 Supabase 프로젝트와 Vercel 환경변수가 필요합니다. 순서는 [설정 가이드](docs/T08_SETUP.md)를 따릅니다.
+
+## 저장소 구조
 
 ~~~text
 .
-├── index.html
-├── api/
-│   ├── passkeys/       # 등록·로그인·목록·삭제
-│   ├── private/        # 세션 계정 범위 private API
-│   ├── security/       # 보안 이벤트
-│   └── _lib/           # DB·세션·WebAuthn·HTTP helper
-├── db/migrations/      # PostgreSQL schema
-├── docs/               # 설정·구현·증거 문서
-│   └── evidence/       # 가상 authenticator 실행 결과(JSON)와 캡처
-├── scripts/            # 문법·요구사항 검사
-├── package.json
-└── vercel.json
+├── index.html        # 공개 포트폴리오 + private 영역 UI
+├── api/              # Vercel Functions (passkeys, private, security, session)
+├── db/migrations/    # PostgreSQL schema와 RLS
+├── docs/             # 설정·구현·검증 문서와 캡처
+└── scripts/          # 문법·정적 검사
 ~~~
-
-## 완료 기준
-
-### 구현
-
-- npm run syntax 통과
-- npm run check 전체 PASS
-- npm audit 결과 확인
-- Vercel deployment Ready
-
-### 데이터베이스
-
-- Supabase SQL Editor에서 migration 실행
-- 여섯 `t08_*` 테이블 생성
-- RLS 활성화 확인
-- server-only Supabase URL/키 설정
-
-### 서비스 경험
-
-- 방문자는 public portfolio를 바로 볼 수 있음
-- private records는 passkey 인증 후에만 표시
-- 여러 passkey 등록과 삭제 가능
-- 계정 A/B의 자료가 서로 분리됨
-- 실패·replay·다른 계정 접근이 각각 401/403으로 거부됨
-
 
 ## 제한 사항
 
-- Supabase 프로젝트와 migration 실행은 배포 계정 권한이 필요합니다.
-- 실제 passkey 검증은 HTTPS와 실제 authenticator가 필요합니다.
-- 정적 검사(`npm run check`)는 코드와 문서에 특정 문자열이 있는지 확인할 뿐 동작을 증명하지 않습니다. 동작 증거는 위 검증 현황의 기록을 따릅니다.
+- 실기기(Windows Hello·휴대전화 passkey·FIDO2 보안 키)로는 아직 시험하지 않았습니다.
+- 실제 passkey 검증은 HTTPS와 실제 authenticator가 필요하고, Supabase migration 실행에는 배포 계정 권한이 필요합니다.
 - Preview Protection이 켜져 있으면 Preview API 대신 접근 가능한 Production 또는 테스트 배포를 사용해야 합니다.
 - 마지막 passkey를 삭제하면 해당 계정의 세션도 종료됩니다.
-- 복구 이메일이나 관리자 강제 재등록 기능은 이 과제 범위에 포함하지 않았습니다.
-
-## 공식 참고
-
-- [Supabase JavaScript client](https://supabase.com/docs/reference/javascript/introduction)
-- [Supabase API 보안·권한·RLS](https://supabase.com/docs/guides/api/securing-your-api)
-- [Supabase 무료 프로젝트·과금 FAQ](https://supabase.com/docs/guides/platform/billing-faq)
-- [Supabase 무료 프로젝트 일시정지](https://supabase.com/docs/guides/platform/free-project-pausing)
-- [Vercel 환경변수](https://vercel.com/docs/environment-variables)
+- 복구 이메일이나 관리자 강제 재등록 기능은 범위에 포함하지 않았습니다.

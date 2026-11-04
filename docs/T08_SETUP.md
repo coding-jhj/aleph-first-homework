@@ -1,6 +1,18 @@
-# T08 배포 및 실행 순서
+# 배포 및 실행 순서
 
 이 프로젝트는 Supabase의 PostgreSQL과 Data API를 사용합니다. Neon이나 별도 PostgreSQL 서버는 필요하지 않습니다.
+
+## 0. 코드 받기와 정적 검사
+
+~~~bash
+git clone https://github.com/coding-jhj/aleph-first-homework.git
+cd aleph-first-homework
+npm ci
+npm run syntax
+npm run check
+~~~
+
+Windows PowerShell에서 `npm.ps1` 오류가 나면 `npm.cmd ci`, `npm.cmd run syntax`, `npm.cmd run check`로 실행합니다. Node.js 20 이상이 필요합니다.
 
 ## 1. Supabase 프로젝트 1개 준비
 
@@ -9,7 +21,7 @@
 3. 없다면 `New project`를 눌러 프로젝트를 하나만 만듭니다.
 4. 데이터베이스 비밀번호는 안전한 곳에 보관합니다. 이번 구현은 브라우저에서 직접 DB에 연결하지 않으므로 일반 사용자에게 공개하지 않습니다.
 
-이 과제에서 `sample-a`, `sample-b`는 Supabase 프로젝트가 아닙니다. 같은 프로젝트의 `t08_accounts` 테이블에 저장되는 계정 행입니다. 무료 플랜에서 앱 사용자 수 때문에 프로젝트를 추가로 만들 필요가 없습니다.
+이 프로젝트에서 `sample-a`, `sample-b`는 Supabase 프로젝트가 아닙니다. 같은 프로젝트의 `t08_accounts` 테이블에 저장되는 계정 행입니다. 무료 플랜에서 앱 사용자 수 때문에 프로젝트를 추가로 만들 필요가 없습니다.
 
 ## 2. Supabase 키 확인
 
@@ -206,11 +218,11 @@ await fetch('/api/private/accounts/B_ACCOUNT_ID/items', {
 4. 가능하면 삭제된 credential로도 시도해 `401` 거부를 확인합니다.
 5. 마지막 passkey를 삭제하면 해당 계정의 세션도 종료됩니다.
 
-## 10. 증거 기록과 제출
+## 10. 검증 기록 작성
 
-실제 결과는 [T08 증거 양식](T08_EVIDENCE_TEMPLATE.md)에 기록합니다. 기대 결과를 미리 통과로 적지 말고, 실제 status·response code·화면 또는 Network 캡처를 넣습니다.
+실제 결과는 [검증 기록](T08_EVIDENCE_TEMPLATE.md)에 기록합니다. 기대 결과를 미리 통과로 적지 말고, 실제 status·response code·화면 또는 Network 캡처를 넣습니다.
 
-제출 전에 다음을 모두 확인합니다.
+기록 전에 다음을 확인합니다.
 
 - GitHub `main`에 최신 코드가 있음
 - Supabase migration 적용 완료
@@ -219,3 +231,19 @@ await fetch('/api/private/accounts/B_ACCOUNT_ID/items', {
 - private read가 로그인 전 401
 - 정상 passkey 로그인 후 private records 표시
 - A/B account scope, replay, 삭제 credential 거부 증거 확보
+
+## 부록: 무료 플랜 운영과 참고 링크
+
+- 사용자 계정은 Supabase 프로젝트가 아니라 `t08_accounts` 행으로 분리됩니다. 앱마다 프로젝트를 새로 만들지 말고 하나를 계속 사용합니다.
+- 무료 플랜은 활성 프로젝트 2개까지이므로 `production` 1개와 `실험용` 1개 정도로만 운영합니다. Preview마다 Supabase 프로젝트를 만들 필요가 없습니다.
+- 무료 프로젝트는 7일 동안 활동이 적으면 자동 일시정지될 수 있습니다. 가끔 실제 페이지를 열어 상태를 확인하고, 일시정지된 프로젝트는 필요할 때 복구합니다.
+- Supabase Dashboard의 Billing/Usage에서 저장공간·대역폭·데이터베이스 사용량을 확인하고, 불필요한 테스트 계정과 이벤트를 정리합니다.
+- 무료 프로젝트 제한을 우회하기 위해 여러 계정을 만들거나 가짜 트래픽을 발생시키는 방식은 사용하지 않습니다.
+
+참고 문서:
+
+- [Supabase JavaScript client](https://supabase.com/docs/reference/javascript/introduction)
+- [Supabase API 보안·권한·RLS](https://supabase.com/docs/guides/api/securing-your-api)
+- [Supabase 무료 프로젝트·과금 FAQ](https://supabase.com/docs/guides/platform/billing-faq)
+- [Supabase 무료 프로젝트 일시정지](https://supabase.com/docs/guides/platform/free-project-pausing)
+- [Vercel 환경변수](https://vercel.com/docs/environment-variables)
